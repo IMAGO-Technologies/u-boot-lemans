@@ -12,6 +12,7 @@
  * Author: James Yang [at freescale.com]
  */
 
+//#define DEBUG
 #include <common.h>
 #include <i2c.h>
 #include <fsl_ddr_sdram.h>

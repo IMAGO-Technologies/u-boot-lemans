@@ -6,6 +6,7 @@
  * Version 2 as published by the Free Software Foundation.
  */
 
+#define DEBUG
 #include <common.h>
 #ifdef CONFIG_PPC
 #include <asm/fsl_law.h>

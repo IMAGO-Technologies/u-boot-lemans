@@ -3,6 +3,7 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
+//#define DEBUG
 #ifndef USE_HOSTCC
 #include <common.h>
 #include <errno.h>
@@ -653,6 +654,11 @@ int fdtdec_prepare_fdt(void)
 #endif
 		return -1;
 	}
+/*	if (gd->fdt_blob) {
+		printf("fdt_blob=%p\n", gd->fdt_blob);
+		print_buffer((ulong)gd->fdt_blob, gd->fdt_blob, 4,
+			     32, 0);
+	}*/
 	return 0;
 }
 
@@ -1246,6 +1252,7 @@ int fdtdec_setup(void)
 # endif
 #endif
 	unpack_packed_dtb();
+//	printf("fdt_blob: 0x%p\n", gd->fdt_blob);
 	return fdtdec_prepare_fdt();
 }
 

@@ -8,6 +8,7 @@
  *
  */
 
+//#define DEBUG
 #include <common.h>
 #include <fsl_ddr_sdram.h>
 
@@ -127,14 +128,22 @@ unsigned int ddr_compute_dimm_parameters(const unsigned int ctrl_num,
 	unsigned int retval;
 	int i;
 #ifndef CONFIG_SYS_FSL_DDR_EMU
-	const u8 udimm_rc_e_dq[18] = {
+	const u8 udimm_rc_e0_dq[18] = {
 		0x0c, 0x2c, 0x15, 0x35, 0x15, 0x35, 0x0b, 0x2c, 0x15,
 		0x35, 0x0b, 0x35, 0x0b, 0x2c, 0x0b, 0x35, 0x15, 0x36
 	};
+	const u8 so_udimm_rc_a0_dq[18] = {
+		0x0e, 0x2e, 0x24, 0x04, 0x03, 0x23, 0x24, 0x04, 0x00,
+		0x00, 0x24, 0x04, 0x04, 0x24, 0x24, 0x04, 0x04, 0x2e
+	};
+	const u8 so_udimm_rc_a1_dq[18] = {
+		0x0c, 0x2b, 0x2d, 0x04, 0x16, 0x35, 0x23, 0x0d, 0x00,
+		0x00, 0x2c, 0x0b, 0x03, 0x24, 0x35, 0x0c, 0x03, 0x2d
+	};
 	int spd_error = 0;
 	u8 *ptr;
+	u8 const *pTable = NULL;
 #endif
-
 	if (spd->mem_type) {
 		if (spd->mem_type != SPD_MEMTYPE_DDR4) {
 			printf("Ctrl %u DIMM %u: is not a DDR4 SPD.\n",
@@ -152,6 +161,10 @@ unsigned int ddr_compute_dimm_parameters(const unsigned int ctrl_num,
 		return 2;
 	}
 
+#ifdef DEBUG	
+	ddr4_spd_dump(spd);
+#endif
+	
 	/*
 	 * The part name in ASCII in the SPD EEPROM is not null terminated.
 	 * Guarantee null termination here by presetting all bytes to 0
@@ -179,38 +192,69 @@ unsigned int ddr_compute_dimm_parameters(const unsigned int ctrl_num,
 	pdimm->registered_dimm = 0;
 	switch (spd->module_type & DDR4_SPD_MODULETYPE_MASK) {
 	case DDR4_SPD_MODULETYPE_RDIMM:
+	case DDR4_SPD_MODULETYPE_72B_SO_RDIMM:
 		/* Registered/buffered DIMMs */
 		pdimm->registered_dimm = 1;
 		break;
 
 	case DDR4_SPD_MODULETYPE_UDIMM:
+		/* Unbuffered DIMMs */
+		if (spd->mod_section.unbuffered.addr_mapping & 0x1)
+			pdimm->mirrored_dimm = 1;
+#ifndef CONFIG_SYS_FSL_DDR_EMU
+		/* Fix SPD error found on DIMMs with raw card E0 */
+		if ((spd->mod_section.unbuffered.mod_height & 0xe0) == 0 &&
+		    (spd->mod_section.unbuffered.ref_raw_card == 0x04))
+			pTable = udimm_rc_e0_dq;
+#endif
+		break;
 	case DDR4_SPD_MODULETYPE_SO_DIMM:
+	case DDR4_SPD_MODULETYPE_72B_SO_UDIMM:
 		/* Unbuffered DIMMs */
 		if (spd->mod_section.unbuffered.addr_mapping & 0x1)
 			pdimm->mirrored_dimm = 1;
 #ifndef CONFIG_SYS_FSL_DDR_EMU
 		if ((spd->mod_section.unbuffered.mod_height & 0xe0) == 0 &&
-		    (spd->mod_section.unbuffered.ref_raw_card == 0x04)) {
-			/* Fix SPD error found on DIMMs with raw card E0 */
-			for (i = 0; i < 18; i++) {
-				if (spd->mapping[i] == udimm_rc_e_dq[i])
-					continue;
-				spd_error = 1;
-				debug("SPD byte %d: 0x%x, should be 0x%x\n",
-				      60 + i, spd->mapping[i],
-				      udimm_rc_e_dq[i]);
-				ptr = (u8 *)&spd->mapping[i];
-				*ptr = udimm_rc_e_dq[i];
-			}
-			if (spd_error)
-				puts("SPD DQ mapping error fixed\n");
+		    (spd->mod_section.unbuffered.ref_raw_card == 0x00))
+		{
+			// Transcend with Hynix chips incorrectly uses card rev. A0: 
+			if (spd->mmid_lsb == 0x01 && spd->mmid_msb == 0x4f &&
+				(256 * spd->mdate[0] + spd->mdate[1]) == 0x1624)
+				pTable = so_udimm_rc_a1_dq;
+			// Micron incorrectly uses card rev. A0: 
+			else if (spd->mmid_lsb == 0x80 && spd->mmid_msb == 0x2c)
+				pTable = so_udimm_rc_a1_dq;
+			else
+				pTable = so_udimm_rc_a0_dq;
 		}
+
+		// Crucial incorrectly uses card rev. B1: 
+		if (spd->mmid_lsb == 0x85 && spd->mmid_msb == 0x9b &&
+			pdimm->n_ranks == 1 &&
+		    spd->mod_section.unbuffered.ref_raw_card == 0x21)
+			pTable = so_udimm_rc_a1_dq;
 #endif
 		break;
 
 	default:
 		printf("unknown module_type 0x%02X\n", spd->module_type);
 		return 1;
+	}
+
+	if (pTable != NULL)
+	{
+		for (i = 0; i < 18; i++) {
+			if (spd->mapping[i] == pTable[i])
+				continue;
+			spd_error = 1;
+			debug("SPD byte %d: 0x%x, should be 0x%x\n",
+			      60 + i, spd->mapping[i],
+				  pTable[i]);
+			ptr = (u8 *)&spd->mapping[i];
+			*ptr = pTable[i];
+		}
+		if (spd_error)
+			puts("SPD DQ mapping error fixed\n");
 	}
 
 	/* SDRAM device parameters */

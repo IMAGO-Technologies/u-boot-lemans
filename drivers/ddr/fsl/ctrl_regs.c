@@ -10,6 +10,7 @@
  * Author: James Yang [at freescale.com]
  */
 
+//#define DEBUG
 #include <common.h>
 #include <fsl_ddr_sdram.h>
 
@@ -833,7 +834,8 @@ static void set_ddr_sdram_cfg(fsl_ddr_cfg_regs_t *ddr,
 			| ((threet_en & 0x1) << 16)
 			| ((twot_en & 0x1) << 15)
 			| ((ba_intlv_ctl & 0x7F) << 8)
-			| ((x32_en & 0x1) << 5)
+//			| ((x32_en & 0x1) << 5)
+			| ((x32_en & 0x1) << 19)
 			| ((pchb8 & 0x1) << 4)
 			| ((hse & 0x1) << 3)
 			| ((acc_ecc_en & 0x1) << 2)
@@ -885,6 +887,7 @@ static void set_ddr_sdram_cfg_2(const unsigned int ctrl_num,
 	 *        * ({EXT_REFREC || REFREC} + 8 + 2)]}
 	 *      << DDR_SDRAM_INTERVAL[REFINT]
 	 */
+//	printf("popts->otf_burst_chop_en=%u\n", popts->otf_burst_chop_en);
 #if defined(CONFIG_SYS_FSL_DDR3) || defined(CONFIG_SYS_FSL_DDR4)
 	obc_cfg = popts->otf_burst_chop_en;
 #else
@@ -911,6 +914,7 @@ static void set_ddr_sdram_cfg_2(const unsigned int ctrl_num,
 #if defined(CONFIG_ECC_INIT_VIA_DDRCONTROLLER)
 	/* Use the DDR controller to auto initialize memory. */
 	d_init = popts->ecc_init_using_memctl;
+	//	d_init = 1;
 	ddr->ddr_data_init = CONFIG_MEM_INIT_VALUE;
 	debug("DDR: ddr_data_init = 0x%08x\n", ddr->ddr_data_init);
 #else
@@ -1351,6 +1355,9 @@ static void set_ddr_sdram_mode(const unsigned int ctrl_num,
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 8,
 		9, 9, 10, 10, 11, 11};
 
+	debug("FSLDDR: ddr_sdram_mode\n");
+	debug("FSLDDR: ddr_sdram_mode\n");
+
 	if (popts->rtt_override)
 		rtt = popts->rtt_override_value;
 	else
@@ -1434,6 +1441,7 @@ static void set_ddr_sdram_mode(const unsigned int ctrl_num,
 		  | ((bl & 0x3) << 0)
 		  );
 
+	debug("FSLDDR: writing ddr_sdram_mode, popts->rtt_override_value=%u\n", popts->rtt_override_value);
 	ddr->ddr_sdram_mode = (0
 			       | ((esdmode & 0xFFFF) << 16)
 			       | ((sdmode & 0xFFFF) << 0)
@@ -2126,6 +2134,7 @@ static void set_ddr_sdram_cfg_3(fsl_ddr_cfg_regs_t *ddr,
 	rd_pre = popts->quad_rank_present ? 1 : 0;
 
 	ddr->ddr_sdram_cfg_3 = (rd_pre & 0x1) << 16;
+//	ddr->ddr_sdram_cfg_3 |= 3 << 12;
 
 	debug("FSLDDR: ddr_sdram_cfg_3 = 0x%08x\n", ddr->ddr_sdram_cfg_3);
 }
@@ -2307,6 +2316,8 @@ compute_fsl_memctl_config_regs(const unsigned int ctrl_num,
 	unsigned int unq_mrs_en = 0;
 	int cs_en = 1;
 
+	debug("compute_fsl_memctl_config_regs(): ctrl_num=%u\n", ctrl_num);
+	
 	memset(ddr, 0, sizeof(fsl_ddr_cfg_regs_t));
 
 	if (common_dimm == NULL) {

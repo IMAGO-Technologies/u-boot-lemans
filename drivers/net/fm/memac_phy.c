@@ -44,6 +44,8 @@ int memac_mdio_write(struct mii_dev *bus, int port_addr, int dev_addr,
 	struct memac_mdio_controller *regs = bus->priv;
 	u32 c45 = 1; /* Default to 10G interface */
 
+//	printf("memac_mdio_write(): port_addr=%d, dev_addr=%d, regnum=%d, value=0x%04x\n", port_addr, dev_addr, regnum, value);
+	
 	if (dev_addr == MDIO_DEVAD_NONE) {
 		c45 = 0; /* clause 22 */
 		dev_addr = regnum & 0x1f;
@@ -89,6 +91,8 @@ int memac_mdio_read(struct mii_dev *bus, int port_addr, int dev_addr,
 	struct memac_mdio_controller *regs = bus->priv;
 	u32 c45 = 1;
 
+//	printf("memac_mdio_read(): port_addr=%d, dev_addr=%d, regnum=%d\n", port_addr, dev_addr, regnum);
+
 	if (dev_addr == MDIO_DEVAD_NONE) {
 		if (!strcmp(bus->name, DEFAULT_FM_TGEC_MDIO_NAME))
 			return 0xffff;
@@ -125,6 +129,8 @@ int memac_mdio_read(struct mii_dev *bus, int port_addr, int dev_addr,
 	/* Return all Fs if nothing was there */
 	if (memac_in_32(&regs->mdio_stat) & MDIO_STAT_RD_ER)
 		return 0xffff;
+
+//	printf("memac_mdio_read(): 0x%04x\n", memac_in_32(&regs->mdio_data) & 0xffff);
 
 	return memac_in_32(&regs->mdio_data) & 0xffff;
 }

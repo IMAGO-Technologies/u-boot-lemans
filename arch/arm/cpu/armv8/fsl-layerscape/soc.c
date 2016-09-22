@@ -321,7 +321,9 @@ void fsl_lsch3_early_init_f(void)
 	erratum_a008997();
 	erratum_a009007();
 	erratum_rcw_src();
+#ifdef CONFIG_FSL_IFC
 	init_early_memctl_regs();	/* tighten IFC timing */
+#endif
 	erratum_a009203();
 	erratum_a008514();
 	erratum_a008336();

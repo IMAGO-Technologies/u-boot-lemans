@@ -1,0 +1,43 @@
+/*
+ * IMAGO VisionBox LeMans device tree source
+ *
+ * Copyright IMAGO Technologies GmbH
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
+ */
+
+/dts-v1/;
+
+#include "fsl-ls2088a.dtsi"
+
+/ {
+	model = "IMAGO VisionBox LeMans";
+	compatible = "fsl,ls2088a";
+
+	aliases {
+		spi0 = &qspi;
+	};
+};
+
+&qspi {
+	bus-num = <0>;
+	status = "okay";
+
+	qflash0: n25q128 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "spi-flash";
+		spi-max-frequency = <1000000>;
+		spi-cpol;
+		spi-cpha;
+		reg = <0>;
+	};
+};
+
+&serial1 {
+	status = "disabled";
+};
+
+&dspi {
+	status = "disabled";
+};

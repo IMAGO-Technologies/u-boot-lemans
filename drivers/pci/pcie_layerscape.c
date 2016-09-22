@@ -306,7 +306,8 @@ int pci_skip_dev(struct pci_controller *hose, pci_dev_t dev)
 
 static int ls_pcie_addr_valid(struct pci_controller *hose, pci_dev_t d)
 {
-	if (PCI_DEV(d) > 0)
+//	if (PCI_DEV(d) > 0)
+	if (PCI_BUS(d) <= (hose->first_busno + 1) && PCI_DEV(d) > 0)  
 		return -EINVAL;
 
 	/* Controller does not support multi-function in RC mode */
@@ -696,7 +697,7 @@ void pcie_set_available_streamids(void *blob, const char *pcie_path,
 	}
 }
 
-#define MAX_STREAM_IDS 4
+#define MAX_STREAM_IDS 32
 void fdt_fixup_smmu_pcie(void *blob)
 {
 	int count;

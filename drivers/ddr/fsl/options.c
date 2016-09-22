@@ -4,6 +4,7 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
+//#define DEBUG
 #include <common.h>
 #include <hwconfig.h>
 #include <fsl_ddr_sdram.h>
@@ -959,6 +960,7 @@ unsigned int populate_memctl_options(const common_timing_params_t *common_dimm,
 #else
 	popts->burst_length = DDR_BL4;	/* has to be 4 for DDR2 */
 #endif
+//	printf("popts->otf_burst_chop_en=%u\n", popts->otf_burst_chop_en);
 
 	/* Choose ddr controller address mirror mode */
 #if defined(CONFIG_SYS_FSL_DDR3) || defined(CONFIG_SYS_FSL_DDR4)

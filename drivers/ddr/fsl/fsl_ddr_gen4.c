@@ -4,6 +4,7 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
+//#define DEBUG
 #include <common.h>
 #include <asm/io.h>
 #include <fsl_ddr_sdram.h>
@@ -237,6 +238,10 @@ void fsl_ddr_set_memctl_regs(const fsl_ddr_cfg_regs_t *regs,
 #endif
 
 #ifdef CONFIG_SYS_FSL_ERRATUM_A008511
+#if 1
+	debug("Writing to debug_38 *0x%p=0x80000000\n", &ddr->debug[37]);
+	ddr_out32(&ddr->debug[37], 0x80000000);
+#else
 	/* Part 1 of 2 */
 	/* This erraum only applies to verion 5.2.0 */
 	if ((fsl_ddr_get_version(ctrl_num) == 0x50200)
@@ -253,6 +258,7 @@ void fsl_ddr_set_memctl_regs(const fsl_ddr_cfg_regs_t *regs,
 			  regs->ddr_sdram_cfg_2 & ~SDRAM_CFG2_D_INIT);
 		ddr_out32(&ddr->debug[25], 0x9000);
 	}
+#endif
 #endif
 
 #ifdef CONFIG_SYS_FSL_ERRATUM_A009801
@@ -329,7 +335,8 @@ step2:
 	mb();
 	isb();
 
-#if defined(CONFIG_SYS_FSL_ERRATUM_A008511) || \
+#if 0
+	defined(CONFIG_SYS_FSL_ERRATUM_A008511) || \
 	defined(CONFIG_SYS_FSL_ERRATUM_A009803)
 	/* Part 2 of 2 */
 	/* This erraum only applies to verion 5.2.0 */
@@ -347,7 +354,7 @@ step2:
 			       ctrl_num, ddr_in32(&ddr->debug[1]));
 		}
 
-#ifdef CONFIG_SYS_FSL_ERRATUM_A008511
+#if 0//def CONFIG_SYS_FSL_ERRATUM_A008511
 		/* The vref setting sequence is different for range 2 */
 		if (regs->ddr_cdr2 & DDR_CDR2_VREF_RANGE_2)
 			vref_seq = vref_seq2;

@@ -637,6 +637,16 @@ config TARGET_LS2080ARDB
 	  development platform that supports the QorIQ LS2080A
 	  Layerscape Architecture processor.
 
+config TARGET_VISIONBOX_LEMANS
+	bool "Support IMAGO VisionBox LeMans"
+	select ARM64
+	select ARMV8_MULTIENTRY
+	select SUPPORT_SPL
+	help
+	  Support for IMAGO VisionBox LeMans platform.
+	  The VisionBox LeMans is a high-performance computer that supports
+	  the QorIQ LS2088A ARM64 processor.
+
 config TARGET_HIKEY
 	bool "Support HiKey 96boards Consumer Edition Platform"
 	select ARM64
@@ -819,6 +829,7 @@ source "board/freescale/vf610twr/Kconfig"
 source "board/gumstix/pepper/Kconfig"
 source "board/h2200/Kconfig"
 source "board/hisilicon/hikey/Kconfig"
+source "board/imago/visionbox_lemans/Kconfig"
 source "board/imx31_phycore/Kconfig"
 source "board/isee/igep0033/Kconfig"
 source "board/maxbcm/Kconfig"

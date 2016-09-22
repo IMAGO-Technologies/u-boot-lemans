@@ -6,6 +6,7 @@
  * Version 2 as published by the Free Software Foundation.
  */
 
+//#define DEBUG
 #include <common.h>
 #include <fsl_ddr_sdram.h>
 

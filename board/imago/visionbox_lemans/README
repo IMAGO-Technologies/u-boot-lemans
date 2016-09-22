@@ -1,0 +1,34 @@
+Overview
+--------
+The VisionBox LeMans is a high-performance computer that supports the
+QorIQ LS2088A Layerscape Architecture processor.
+
+The LS2088A integrated multicore processor combines eight ARM Cortex-A72
+processor cores with high-performance data path acceleration logic and network
+and peripheral bus interfaces.
+
+ - QSPI Boot Flash
+    - 16 MB Flash used for boot code
+ - DDR Controller
+     - Two DDR4 SO-DIMM modules with support for ECC and up to 2133MT/s.
+ - PCI Express
+      - Two PCIe x4 Gen 2 slots
+      - One PCIe x16 Gen 3 slot, four lanes used
+ - Four 1 Gbps Ethernet, RJ45  
+ - Two 10 Gbps Ethernet, SFP+
+ - Two high speed USB 3.0 ports Type-A connector
+ - SD Card Rev 2.0 and Rev 3.0
+ - mSATA interface
+ - UART RS-232
+
+Memory map from core's view
+----------------------------
+0x00_0000_0000 .. 0x00_000F_FFFF	Boot Rom
+0x00_0100_0000 .. 0x00_0FFF_FFFF	CCSR
+0x00_1800_0000 .. 0x00_181F_FFFF	OCRAM
+0x00_2000_0000 .. 0x00_3FFF_FFFF	QSPI Flash
+0x00_8000_0000 .. 0x00_FFFF_FFFF	DDR region #1
+0x80_8000_0000 .. 0xFF_FFFF_FFFF	DDR region #2
+
+Other addresses are either reserved, or not used directly by u-boot.
+This list should be updated when more addresses are used.

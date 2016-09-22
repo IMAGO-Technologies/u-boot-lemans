@@ -30,8 +30,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-int numclusters = 0;
-
 void cpu_name(char *name)
 {
 	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
@@ -484,7 +482,6 @@ u32 cpu_mask(void)
 		}
 		i++;
 	} while ((cluster & TP_CLUSTER_EOC) == 0x0);
-	numclusters = i;
 
 	return mask;
 }
@@ -502,8 +499,16 @@ int cpu_numcores(void)
  */
 int cpu_numclusters(void)
 {
-	cpu_mask();
-	return numclusters;
+	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+	int i = 0;
+	u32 cluster;
+
+	do {
+		cluster = gur_in32(&gur->tp_cluster[i].lower);
+		i++;
+	} while ((cluster & TP_CLUSTER_EOC) == 0x0);
+
+	return i;
 }
 
 int fsl_qoriq_core_to_cluster(unsigned int core)

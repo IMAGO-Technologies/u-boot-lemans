@@ -1,0 +1,16 @@
+
+if TARGET_VISIONBOX_LEMANS
+
+config SYS_BOARD
+	default "visionbox_lemans"
+
+config SYS_VENDOR
+	default "imago"
+
+config SYS_SOC
+	default "fsl-layerscape"
+
+config SYS_CONFIG_NAME
+	default "visionbox_lemans"
+
+endif

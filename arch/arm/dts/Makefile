@@ -93,7 +93,8 @@ dtb-$(CONFIG_LS102XA) += ls1021a-qds.dtb \
 dtb-$(CONFIG_FSL_LSCH3) += fsl-ls2080a-qds.dtb \
 	fsl-ls2080a-rdb.dtb \
 	fsl-ls2088a-qds.dtb \
-	fsl-ls2088a-rdb.dtb
+	fsl-ls2088a-rdb.dtb \
+	fsl-ls2088a-lemans.dtb
 
 itb-$(CONFIG_FSL_LSCH3) += fsl-lsch3-qds.itb \
 	fsl-lsch3-rdb.itb

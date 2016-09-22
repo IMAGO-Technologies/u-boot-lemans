@@ -4,6 +4,7 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
+//#define DEBUG
 #include <common.h>
 #include <asm/io.h>
 #include <asm/types.h>
@@ -981,6 +982,7 @@ static int ldpaa_eth_netdev_init(struct eth_device *net_dev,
 #endif
 
 	err = eth_register(net_dev);
+
 	if (err < 0) {
 		printf("eth_register() = %d\n", err);
 		return err;
@@ -1015,7 +1017,7 @@ int ldpaa_eth_init(int dpmac_id, phy_interface_t enet_if)
 	net_dev->priv = (void *)priv;
 	priv->net_dev = (struct eth_device *)net_dev;
 	priv->dpmac_id = dpmac_id;
-	debug("%s dpmac_id=%d\n", __func__, dpmac_id);
+//	debug("%s dpmac_id=%d\n", __func__, dpmac_id);
 
 	err = ldpaa_eth_netdev_init(net_dev, enet_if);
 	if (err)
