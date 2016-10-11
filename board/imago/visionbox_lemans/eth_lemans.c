@@ -22,6 +22,57 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define MC_BOOT_ENV_VAR "mcinitcmd"
 
+/* U-Boot command fixup_dpl: Copy MAC address information from the environment
+ * to the Data Path Layout.
+ */
+static int do_fixup_dpl(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	char env_eth[40];
+	char *eth_mac;
+	char dpni[40];
+	int offset;
+	int i;
+	unsigned char mac_addr[6];
+	int mac_dt[6];
+	int eth_id;
+	void *dpl_fdt_hdr;
+
+	if (argc < 2) {
+		puts("fixup_dpl: missing arguments!\n");
+		return CMD_RET_FAILURE;
+	}
+
+	dpl_fdt_hdr = (void *)simple_strtoul(argv[1], NULL, 16);
+
+	printf("Updating MAC address information in DPL\n");
+
+	for (eth_id=0; eth_id<6; eth_id++)
+	{
+		if (!eth_getenv_enetaddr_by_index("eth", eth_id, mac_addr))
+		{
+			printf("MAC address for eth%u not found in environment!\n", eth_id);
+			continue;
+		}
+
+		for (i=0; i<6; i++)
+			mac_dt[i] = cpu_to_fdt32(mac_addr[i]);
+		
+		sprintf(dpni, "/objects/dpni@%u", eth_id);
+		offset = fdt_path_offset(dpl_fdt_hdr, dpni);
+		if (offset < 0) {
+			printf("Node '%s' not found in DPL!\n", dpni);
+			continue;
+		}
+		fdt_setprop(dpl_fdt_hdr, offset, "mac_addr", mac_dt, sizeof(mac_dt));
+	}
+}
+
+U_BOOT_CMD(
+	fixup_dpl,  2,  1,   do_fixup_dpl,
+	"Update Data Path Layout with MAC address information for DPNI objects",
+	"fixup_dpl <DPL address>\n"
+);
+
 int board_eth_init(bd_t *bis)
 {
 #if defined(CONFIG_FSL_MC_ENET)

@@ -34,6 +34,7 @@
 	"ext2load mmc 0:1 0xa2800000 /boot/dpc-0x3741.dtb;"	\
 	"fsl_mc start mc 0xa2300000 0xa2800000\0" \
 	"mmcboot=ext2load mmc 0:1 0xa2700000 /boot/dpl-eth.0x37_0x41.dtb;" \
+	"fixup_dpl 0xa2700000;" \
 	"fsl_mc apply DPL 0xa2700000;ext2load mmc 0:1 0xa0000000 /boot/Image.gz;" \
 	"unzip 0xa0000000 0xb0000000;ext2load mmc 0:1 0xa1000000 /boot/fsl-ls2088a-lemans.dtb;" \
 	"booti 0xb0000000 - 0xa1000000"
@@ -92,10 +93,12 @@
 #define CONFIG_PCI		/* Enable PCIE */
 #define CONFIG_PCIE_LAYERSCAPE	/* Use common FSL Layerscape PCIe code */
 
+/* PCIe enumeration doesn't work properly when using multiple PCIe Switches. Let the kernel
+ * handle enumeration instead.
 #define CONFIG_PCI_PNP
 #define CONFIG_PCI_SCAN_SHOW
 #define CONFIG_CMD_PCI
-#define CONFIG_CMD_PCI_ENUM
+#define CONFIG_CMD_PCI_ENUM*/
 
 #undef CONFIG_PCIE1
 #undef FSL_PEX1_STREAM_ID_START
