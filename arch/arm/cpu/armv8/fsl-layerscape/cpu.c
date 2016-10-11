@@ -53,6 +53,7 @@ void cpu_name(char *name)
 
 void unpack_packed_dtb(void)
 {
+#ifndef CONFIG_TARGET_VISIONBOX_LEMANS
         int noffset;
         size_t size;
         const void *img_addr, *fit;
@@ -83,6 +84,7 @@ void unpack_packed_dtb(void)
 
         gd->fdt_blob = (ulong *)img_addr;
         return;
+#endif
 }
 
 #ifndef CONFIG_SYS_DCACHE_OFF
