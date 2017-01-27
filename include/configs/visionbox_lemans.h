@@ -40,7 +40,7 @@
 	"booti 0xb0000000 - 0xa1000000"
 	
 #undef CONFIG_BOOTARGS
-#define CONFIG_BOOTARGS		"console=ttyS0,115200 root=/dev/mmcblk0p1 rw rootwait" \
+#define CONFIG_BOOTARGS		"console=ttyS0,115200 root=/dev/mmcblk0p1 rw rootwait " \
 				"earlycon=uart8250,mmio,0x21c0500 " \
 				"ramdisk_size=0x2000000 default_hugepagesz=2m " \
 				"hugepagesz=2m hugepages=256 " \
