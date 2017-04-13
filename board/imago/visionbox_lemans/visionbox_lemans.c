@@ -54,8 +54,7 @@ int checkboard(void)
 	uint32_t regValue;
 	int i;
 
-	printf("Board: VisionBox LeMans\n");
-
+//	printf("Board: VisionBox LeMans\n");
 //	printf("Board version: %c", ...);
 
 	/* 
@@ -118,15 +117,15 @@ int checkboard(void)
 		
 		select_i2c_ch_pca9547(I2C_MUX_CH_XFI1 + i);
 		/* Write PCA9538 output register: */
-		val = 0x40;	// RATE = 1, TXDISABLE = 0
+		val = 0x40;	// RS0 = 1, TXDISABLE = 0
 		ret = i2c_write(I2C_XFI_GPIOMUX_ADDR, 1, 1, &val, 1);
 		if (ret) {
 			printf("I2C: failed to configure GPIO-Multiplexer (%u)\n", i);
 			continue;
 		}
 		/* Write PCA9538 configuration register: 0 is OUT, 1 is IN */
-		val = (~0x95) & 0xff;
-		ret = i2c_write(I2C_XFI_GPIOMUX_ADDR, 1, 1, &val, 1);
+		val = (~0x42) & 0xff;
+		ret = i2c_write(I2C_XFI_GPIOMUX_ADDR, 3, 1, &val, 1);
 		if (ret) {
 			printf("I2C: failed to configure GPIO-Multiplexer (%u)\n", i);
 			continue;
