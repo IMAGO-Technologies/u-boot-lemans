@@ -44,10 +44,7 @@
 /* Flat Device Tree Definitions */
 #define CONFIG_OF_LIBFDT
 #define CONFIG_OF_BOARD_SETUP
-
-/* new uImage format support */
-#define CONFIG_FIT
-#define CONFIG_FIT_VERBOSE	/* enable fit_format_{error,warning}() */
+#define CONFIG_OF_STDOUT_VIA_ALIAS
 
 #ifndef CONFIG_SPL
 #define CONFIG_FSL_DDR_INTERACTIVE	/* Interactive debugging */
@@ -65,18 +62,10 @@
  */
 #define CPU_RELEASE_ADDR		secondary_boot_func
 
-/* Generic Timer Definitions */
-/*
- * This is not an accurate number. It is used in start.S. The frequency
- * will be udpated later when get_bus_freq(0) is available.
- */
-#define COUNTER_FREQUENCY		25000000	/* 25MHz */
-
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2048 * 1024)
 
 /* I2C */
-#define CONFIG_CMD_I2C
 #define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_SYS_I2C_MXC_I2C1		/* enable I2C bus 1 */
@@ -126,12 +115,17 @@
 #define CONFIG_SYS_FLASH1_BASE_PHYS		0xC0000000
 #define CONFIG_SYS_FLASH1_BASE_PHYS_EARLY	0x8000000
 
-#ifndef CONFIG_SYS_NO_FLASH
-#define CONFIG_FLASH_CFI_DRIVER
-#define CONFIG_SYS_FLASH_CFI
-#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
-#define CONFIG_SYS_FLASH_QUIET_TEST
+#ifndef __ASSEMBLY__
+unsigned long long get_qixis_addr(void);
 #endif
+
+#define QIXIS_BASE				get_qixis_addr()
+#define QIXIS_BASE_PHYS				0x20000000
+#define QIXIS_BASE_PHYS_EARLY			0xC000000
+
+
+#define CONFIG_SYS_NAND_BASE			0x530000000ULL
+#define CONFIG_SYS_NAND_BASE_PHYS		0x30000000
 
 /* Debug Server firmware */
 #define CONFIG_FSL_DEBUG_SERVER
@@ -160,13 +154,45 @@
 #define CONFIG_SYS_MC_RSV_MEM_ALIGN			(512UL * 1024 * 1024)
 #endif
 
+/* PCIe */
+#define CONFIG_PCI
+#define CONFIG_PCIE1		/* PCIE controler 1 */
+#define CONFIG_PCIE2		/* PCIE controler 2 */
+#define CONFIG_PCIE3		/* PCIE controler 3 */
+#define CONFIG_PCIE_LAYERSCAPE	/* Use common FSL Layerscape PCIe code */
+#define FSL_PCIE_COMPAT "fsl,ls1088a-pcie"
+
+#define CONFIG_SYS_PCI_64BIT
+
+#define CONFIG_SYS_PCIE_CFG0_PHYS_OFF	0x00000000
+#define CONFIG_SYS_PCIE_CFG0_SIZE	0x00001000	/* 4k */
+#define CONFIG_SYS_PCIE_CFG1_PHYS_OFF	0x00001000
+#define CONFIG_SYS_PCIE_CFG1_SIZE	0x00001000	/* 4k */
+
+#define CONFIG_SYS_PCIE_IO_BUS		0x00000000
+#define CONFIG_SYS_PCIE_IO_PHYS_OFF	0x00010000
+#define CONFIG_SYS_PCIE_IO_SIZE		0x00010000	/* 64k */
+
+#define CONFIG_SYS_PCIE_MEM_BUS		0x40000000
+#define CONFIG_SYS_PCIE_MEM_PHYS_OFF	0x40000000
+#define CONFIG_SYS_PCIE_MEM_SIZE	0x40000000	/* 1G */
+
+#ifdef CONFIG_PCI
+#define CONFIG_NET_MULTI
+#define CONFIG_PCI_PNP
+#define CONFIG_PCI_SCAN_SHOW
+#define CONFIG_CMD_PCI
+#endif
+
+#define CONFIG_FSL_CAAM			/* Enable SEC/CAAM */
+
 /* Command line configuration */
-#define CONFIG_CMD_CACHE
-#define CONFIG_CMD_DHCP
 #define CONFIG_CMD_ENV
 #define CONFIG_CMD_GREPENV
 #define CONFIG_CMD_MII
-#define CONFIG_CMD_PING
+#define CONFIG_CMD_CACHE
+#define CONFIG_CMD_EXT2
+#define CONFIG_CMD_FAT
 
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_LOAD_ADDR	(CONFIG_SYS_DDR_SDRAM_BASE + 0x10000000)
@@ -175,7 +201,7 @@
 /* Physical Memory Map */
 #define CONFIG_CHIP_SELECTS_PER_CTRL	4
 
-#define CONFIG_NR_DRAM_BANKS		3
+#define CONFIG_NR_DRAM_BANKS		2
 
 #define CONFIG_HWCONFIG
 #define HWCONFIG_BUFFER_SIZE		128
@@ -208,13 +234,12 @@
 #define CONFIG_BOOTCOMMAND	"fsl_mc apply dpl 0x580700000 &&" \
 				" cp.b $kernel_start $kernel_load" \
 				" $kernel_size && bootm $kernel_load"
-#define CONFIG_BOOTDELAY		10
 
+#define CONFIG_BOOTDELAY	10
 /* Monitor Command Prompt */
 #define CONFIG_SYS_CBSIZE		512	/* Console I/O Buffer Size */
 #define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
 					sizeof(CONFIG_SYS_PROMPT) + 16)
-#define CONFIG_SYS_HUSH_PARSER
 #define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE /* Boot args buffer */
 #define CONFIG_SYS_LONGHELP
@@ -222,12 +247,9 @@
 #define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_MAXARGS		64	/* max command args */
 
-#ifndef __ASSEMBLY__
-unsigned long get_dram_size_to_hide(void);
-#endif
-
 #define CONFIG_PANIC_HANG	/* do not reset board on panic */
 
+#ifdef CONFIG_SPL
 #define CONFIG_SPL_BSS_START_ADDR      0x80100000
 #define CONFIG_SPL_BSS_MAX_SIZE                0x00100000
 #define CONFIG_SPL_DRIVERS_MISC_SUPPORT
@@ -244,8 +266,6 @@ unsigned long get_dram_size_to_hide(void);
 #define CONFIG_SPL_TARGET              "u-boot-with-spl.bin"
 #define CONFIG_SPL_TEXT_BASE           0x1800a000
 
-#define CONFIG_SYS_NAND_U_BOOT_DST     0x80400000
-#define CONFIG_SYS_NAND_U_BOOT_START   CONFIG_SYS_NAND_U_BOOT_DST
 #ifdef CONFIG_SD_BOOT
 #define CONFIG_SPL_MMC_SUPPORT
 #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR               0x8B0
@@ -257,6 +277,7 @@ unsigned long get_dram_size_to_hide(void);
 #define CONFIG_SYS_SPL_MALLOC_SIZE     0x00100000
 #define CONFIG_SYS_SPL_MALLOC_START    0x80200000
 #define CONFIG_SYS_MONITOR_LEN         (512 * 1024)
+#endif
 
 #define CONFIG_SYS_BOOTM_LEN   (64 << 20)      /* Increase max gunzip size */
 

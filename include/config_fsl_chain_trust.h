@@ -21,13 +21,13 @@
 
 #define CONFIG_ENV_IS_NOWHERE
 
-#endif
+#endif /* CONFIG_SECURE_BOOT */
 
 #ifdef CONFIG_CHAIN_OF_TRUST
 
 #ifndef CONFIG_EXTRA_ENV
 #define CONFIG_EXTRA_ENV	""
-#endif
+#endif /* CONFIG_EXTRA_ENV */
 
 /*
  * Control should not reach back to uboot after validation of images
@@ -49,7 +49,7 @@
 #else
 #define CONFIG_SET_BOOTARGS	"setenv bootargs \'root=/dev/ram "	\
 				"rw console=ttyS0,115200 ramdisk_size=600000\';"
-#endif
+#endif /* CONFIG_BOOTARGS */
 
 
 #ifdef CONFIG_BOOTSCRIPT_KEY_HASH
@@ -69,7 +69,7 @@
 	"esbc_validate $bs_hdraddr;" \
 	"source $img_addr;"	\
 	"esbc_halt\0"
-#endif
+#endif /*CONFIG_BOOTSCRIPT_KEY_HASH */
 
 #ifdef CONFIG_BOOTSCRIPT_COPY_RAM
 #define CONFIG_BS_COPY_ENV \
@@ -80,31 +80,44 @@
 	"setenv bs_flash " __stringify(CONFIG_BS_ADDR_FLASH)";" \
 	"setenv bs_size " __stringify(CONFIG_BS_SIZE)";"
 
-/* For secure boot flow, default environment used will be used */
+/* Define BS_COPY_COMMAND to copy bootscript for different types of BOOT
+ * For RAMBOOT, check the type of RAMBOOT to define copy command
+ * For SoC's where QSPI XIP mode doesnot work - CONFIG_BS_COPY_QSPI_IP is used
+ * and for rest it is just a copy command
+ */
+
 #if defined(CONFIG_SYS_RAMBOOT)
 #if defined(CONFIG_RAMBOOT_NAND)
 #define CONFIG_BS_COPY_CMD \
 	"nand read $bs_hdr_ram $bs_hdr_flash $bs_hdr_size ;" \
 	"nand read $bs_ram $bs_flash $bs_size ;"
 #endif /* CONFIG_RAMBOOT_NAND */
-#else
+
+/* CONFIG_BS_COPY_QSPI_IP macro is used for sf read due to some QSPI issue */
+# elif defined(CONFIG_BS_COPY_QSPI_IP)
+#define CONFIG_BS_COPY_CMD \
+	"sf read $bs_hdr_ram $bs_hdr_flash $bs_hdr_size ;" \
+	"sf read $bs_ram $bs_flash $bs_size ;"
+
+#else /* !defined(CONFIG_SYS_RAMBOOT), !defined(CONFIG_BS_COPY_QSPI_IP) */
 #define CONFIG_BS_COPY_CMD \
 	"cp.b $bs_hdr_flash $bs_hdr_ram  $bs_hdr_size ;" \
 	"cp.b $bs_flash $bs_ram  $bs_size ;"
-#endif
+
+#endif /* CONFIG_SYS_RAMBOOT */
 #endif /* CONFIG_BOOTSCRIPT_COPY_RAM */
 
 #ifndef CONFIG_BS_COPY_ENV
 #define CONFIG_BS_COPY_ENV
-#endif
+#endif /* CONFIG_BS_COPY_ENV */
 
 #ifndef CONFIG_BS_COPY_CMD
 #define CONFIG_BS_COPY_CMD
-#endif
+#endif /* CONFIG_BS_COPY_CMD  */
 
 #define CONFIG_CHAIN_BOOT_CMD	CONFIG_BS_COPY_ENV \
 				CONFIG_BS_COPY_CMD \
 				CONFIG_SECBOOT
 
-#endif
+#endif/* CONFIG_CHAIN_OF_TRUST */
 #endif

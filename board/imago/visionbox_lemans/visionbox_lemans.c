@@ -14,6 +14,7 @@
 #include <libfdt.h>
 #include <fsl_debug_server.h>
 #include <fsl-mc/fsl_mc.h>
+#include <fsl_ddr_sdram.h>
 #include <environment.h>
 #include <i2c.h>
 #include <asm/arch/soc.h>
@@ -30,7 +31,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define GPIO_DATA	8
 
 /* I2C Multiplexer */
-int select_i2c_ch_pca9547(u8 ch)
+int select_i2c_ch_pca9547(uint8_t ch)
 {
 	int ret;
 
@@ -43,14 +44,14 @@ int select_i2c_ch_pca9547(u8 ch)
 	return 0;
 }
 
-int i2c_multiplexer_select_vid_channel(u8 channel)
+int i2c_multiplexer_select_vid_channel(uint8_t channel)
 {
 	return select_i2c_ch_pca9547(channel);
 }
 
 int checkboard(void)
 {
-	u32 regValue;
+	uint32_t regValue;
 	int i;
 
 	printf("Board: VisionBox LeMans\n");
@@ -124,7 +125,7 @@ int checkboard(void)
 			continue;
 		}
 		/* Write PCA9538 configuration register: 0 is OUT, 1 is IN */
-		val = ~0x95;
+		val = (~0x95) & 0xff;
 		ret = i2c_write(I2C_XFI_GPIOMUX_ADDR, 1, 1, &val, 1);
 		if (ret) {
 			printf("I2C: failed to configure GPIO-Multiplexer (%u)\n", i);

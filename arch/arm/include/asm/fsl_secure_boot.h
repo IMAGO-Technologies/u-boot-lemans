@@ -75,11 +75,17 @@
 #endif
 /* The address needs to be modified according to NOR and DDR memory map */
 #ifdef CONFIG_FSL_LSCH3
-#define CONFIG_BS_HDR_ADDR_FLASH	0x583920000
-#define CONFIG_BS_ADDR_FLASH		0x583900000
-#define CONFIG_BS_HDR_ADDR_RAM		0xa3920000
-#define CONFIG_BS_ADDR_RAM		0xa3900000
-#else
+#ifdef CONFIG_QSPI_BOOT
+#define CONFIG_BS_COPY_QSPI_IP
+#define CONFIG_BS_HDR_ADDR_FLASH        0xd00000
+#define CONFIG_BS_ADDR_FLASH            0xe00000
+#else /* NOR BOOT */
+#define CONFIG_BS_HDR_ADDR_FLASH        0x580d00000
+#define CONFIG_BS_ADDR_FLASH            0x580e00000
+#endif /*ifdef CONFIG_QSPI_BOOT */
+#define CONFIG_BS_HDR_ADDR_RAM          0xa0d00000
+#define CONFIG_BS_ADDR_RAM              0xa0e00000
+#else /* !ifdef CONFIG_FSL_LSCH3 */
 #define CONFIG_BS_HDR_ADDR_FLASH	0x600a0000
 #define CONFIG_BS_ADDR_FLASH		0x60060000
 #define CONFIG_BS_HDR_ADDR_RAM		0xa0060000
@@ -97,9 +103,11 @@
 #endif
 
 #ifdef CONFIG_FSL_LS_PPA
-#ifdef CONFIG_SYS_LS_PPA_FW_IN_NOR
+#ifdef CONFIG_SYS_LS_PPA_FW_IN_XIP
 #ifdef CONFIG_LS1043A
 #define CONFIG_SYS_LS_PPA_ESBC_ADDR	0x600c0000
+#elif defined(CONFIG_FSL_LSCH3)
+#define CONFIG_SYS_LS_PPA_ESBC_ADDR     0x580c40000
 #endif
 #else
 #error "No CONFIG_SYS_LS_PPA_FW_IN_xxx defined"

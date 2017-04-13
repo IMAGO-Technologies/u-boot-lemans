@@ -28,8 +28,8 @@ static const struct board_specific_parameters udimm0[] = {
 	 *   num|  hi| rank|  clk| wrlvl |   wrlvl   |  wrlvl
 	 * ranks| mhz| GB  |adjst| start |   ctl2    |  ctl3
 	 */
-	{2,  2140, 0, 4,     4, 0x0, 0x0},
-	{1,  2140, 0, 4,     4, 0x0, 0x0},
+	{2,  2140, 0, 8,     4, 0x0, 0x0},
+	{1,  2140, 0, 8,     4, 0x0, 0x0},
 	{}
 };
 
@@ -40,8 +40,8 @@ static const struct board_specific_parameters udimm2[] = {
 	 *   num|  hi| rank|  clk| wrlvl |   wrlvl   |  wrlvl
 	 * ranks| mhz| GB  |adjst| start |   ctl2    |  ctl3
 	 */
-	{2,  2140, 0, 4,     4, 0x0, 0x0},
-	{1,  2140, 0, 4,     4, 0x0, 0x0},
+	{2,  2140, 0, 8,     4, 0x0, 0x0},
+	{1,  2140, 0, 8,     4, 0x0, 0x0},
 	{}
 };
 

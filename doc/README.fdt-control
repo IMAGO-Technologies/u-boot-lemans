@@ -61,18 +61,6 @@ There is also a mailing list:
 In case you are wondering, OF stands for Open Firmware.
 
 
-What is a Packed Device Tree?
------------------------------
-
-Sometimes multiple devicetrees need to be appened to a single U-Boot
-image (to support similar SoCs or multiple personalities).
-In this scenario one option would be to pack multiple devicetrees
-into a single FIT formatted image (a packed DT) and append that
-image to u-boot.bin.
-At runtime platform specific code will pick the appropriate
-devicetree depending on the SoC it's runing on.
-
-
 Tools
 -----
 
@@ -200,41 +188,6 @@ silent-console
 
 no-keyboard
 	Tells U-Boot not to expect an attached keyboard with a VGA console
-
-
-Configuration for Packed Device Tree
-------------------------------------
-
-In addition to the above to use a packed devicetree instead of
-a standalone dtb use:
-#define CONFIG_PACKED_DEVICE_TREE "<image-src-file.its>"
-
-the image-src-file will look something like:
-/ {
-        description = "Flattened Device Tree blob";
-        #address-cells = <1>;
-
-        images {
-                SOC1 {
-                        description = "Flattened Device Tree blob";
-                        data = /incbin/("./SOC1.dtb");
-                        type = "flat_dt";
-                        arch = "arm64";
-                        compression = "none";
-                };
-                SOC2 {
-                        description = "Flattened Device Tree blob";
-                        data = /incbin/("./SOC2.dtb");
-                        type = "flat_dt";
-                        arch = "arm64";
-                        compression = "none";
-                };
-        };
-};
-
-Also, the platform code needs to define a unpack_packed_dtb() function
-which will contain logic to device which devicetree will be used in
-fdtdec_setup()
 
 
 Limitations

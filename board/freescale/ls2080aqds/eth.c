@@ -144,8 +144,10 @@ static void sgmii_configure_repeater(int serdes_port)
 
 		mdelay(10);
 
-		if ((value & 0xfff) == 0x40f) {
+		if ((value & 0xfff) == 0x401) {
 			printf("DPMAC %d:PHY is ..... Configured\n", dpmac_id);
+			miiphy_write(dev[mii_bus], riser_phy_addr[dpmac],
+				     0x1f, 0);
 			continue;
 		}
 
@@ -181,28 +183,29 @@ static void sgmii_configure_repeater(int serdes_port)
 				if (ret > 0)
 					goto error;
 
-				mdelay(1);
+				mdelay(100);
 				ret = miiphy_read(dev[mii_bus],
 						  riser_phy_addr[dpmac],
 						  0x11, &value);
 				if (ret > 0)
 					goto error;
-				mdelay(10);
 
-				if ((value & 0xfff) == 0x40f) {
+				if ((value & 0xfff) == 0x401) {
 					printf("DPMAC %d :PHY is configured ",
 					       dpmac_id);
 					printf("after setting repeater 0x%x\n",
 					       value);
 					i = 5;
 					j = 5;
-				} else
+				} else {
 					printf("DPMAC %d :PHY is failed to ",
 					       dpmac_id);
 					printf("configure the repeater 0x%x\n",
 					       value);
 				}
+			}
 		}
+		miiphy_write(dev[mii_bus], riser_phy_addr[dpmac], 0x1f, 0);
 	}
 error:
 	if (ret)
@@ -518,6 +521,8 @@ static void initialize_dpmac_to_slot(void)
 		break;
 
 	case 0x2A:
+	case 0x4B:
+	case 0x4C:
 		printf("qds: WRIOP: Supported SerDes1 Protocol 0x%02x\n",
 		       serdes1_prtcl);
 		break;
@@ -818,6 +823,8 @@ void ls2080a_handle_phy_interface_xsgmii(int i)
 
 	switch (serdes1_prtcl) {
 	case 0x2A:
+	case 0x4B:
+	case 0x4C:
 		/*
 		 * XFI does not need a PHY to work, but to avoid U-boot use
 		 * default PHY address which is zero to a MAC when it found

@@ -176,7 +176,7 @@ static const struct sys_mmu_table early_mmu_table[] = {
 #endif
 };
 
-static const struct sys_mmu_table final_mmu_table[] = {
+static struct sys_mmu_table final_mmu_table[] = {
 #ifdef CONFIG_FSL_LSCH3
 	{ CONFIG_SYS_FSL_CCSR_BASE, CONFIG_SYS_FSL_CCSR_BASE,
 	  CONFIG_SYS_FSL_CCSR_SIZE, MT_DEVICE_NGNRNE,
@@ -276,6 +276,7 @@ static const struct sys_mmu_table final_mmu_table[] = {
 };
 #endif
 
+void fix_final_mmu_table(void);
 int fsl_qoriq_core_to_cluster(unsigned int core);
 u32 cpu_mask(void);
 #endif /* _FSL_LAYERSCAPE_CPU_H */

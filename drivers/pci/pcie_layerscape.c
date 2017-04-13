@@ -112,23 +112,28 @@ struct ls_pcie_info {
 	u64 io_size;
 };
 
-#define SET_LS_PCIE_INFO(x, num)			\
+#define CONFIG_SYS_PCIE1_LS2088A_PHYS_ADDR	0x2000000000ULL
+#define CONFIG_SYS_PCIE2_LS2088A_PHYS_ADDR	0x2800000000ULL
+#define CONFIG_SYS_PCIE3_LS2088A_PHYS_ADDR	0x3000000000ULL
+#define CONFIG_SYS_PCIE4_LS2088A_PHYS_ADDR	0x3800000000ULL
+
+#define SET_LS_PCIE_INFO(x, num, ...)			\
 {							\
 	x.regs = CONFIG_SYS_PCIE##num##_ADDR;		\
-	x.phys_base = CONFIG_SYS_PCIE##num##_PHYS_ADDR;	\
+	x.phys_base = CONFIG_SYS_PCIE##num##__VA_ARGS__##_PHYS_ADDR;	\
 	x.cfg0_phys = CONFIG_SYS_PCIE_CFG0_PHYS_OFF +	\
-		      CONFIG_SYS_PCIE##num##_PHYS_ADDR;	\
+		      CONFIG_SYS_PCIE##num##__VA_ARGS__##_PHYS_ADDR;	\
 	x.cfg0_size = CONFIG_SYS_PCIE_CFG0_SIZE;	\
 	x.cfg1_phys = CONFIG_SYS_PCIE_CFG1_PHYS_OFF +	\
-		      CONFIG_SYS_PCIE##num##_PHYS_ADDR;	\
+		      CONFIG_SYS_PCIE##num##__VA_ARGS__##_PHYS_ADDR;	\
 	x.cfg1_size = CONFIG_SYS_PCIE_CFG1_SIZE;	\
 	x.mem_bus = CONFIG_SYS_PCIE_MEM_BUS;		\
 	x.mem_phys = CONFIG_SYS_PCIE_MEM_PHYS_OFF +	\
-		     CONFIG_SYS_PCIE##num##_PHYS_ADDR;	\
+		     CONFIG_SYS_PCIE##num##__VA_ARGS__##_PHYS_ADDR;	\
 	x.mem_size = CONFIG_SYS_PCIE_MEM_SIZE;		\
 	x.io_bus = CONFIG_SYS_PCIE_IO_BUS;		\
 	x.io_phys = CONFIG_SYS_PCIE_IO_PHYS_OFF +	\
-		    CONFIG_SYS_PCIE##num##_PHYS_ADDR;	\
+		    CONFIG_SYS_PCIE##num##__VA_ARGS__##_PHYS_ADDR;	\
 	x.io_size = CONFIG_SYS_PCIE_IO_SIZE;		\
 	x.pci_num = num;				\
 }
@@ -157,18 +162,20 @@ static int ls_pcie_link_state(struct ls_pcie *pcie)
 static int ls_pcie_link_state(struct ls_pcie *pcie)
 {
 	u32 state;
-	u32 svr, ver, offset;
+	u32 ver, lut_base, offset;
 	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
 
-	svr = gur_in32(&gur->svr);
-	ver = SVR_SOC_VER(svr);
-	if ((ver == SVR_LS2088) || (ver == SVR_LS2084)
-	    || (ver == SVR_LS2044) || (ver == SVR_LS2048))
+	ver = SVR_SOC_VER(gur_in32(&gur->svr));
+	if ((ver == SVR_LS2088) || (ver == SVR_LS2084) ||
+	   (ver == SVR_LS2048) || (ver == SVR_LS2044)) {
+		lut_base = 0x80000;
 		offset = 0x407fc;
-	else
+	} else {
+		lut_base = PCIE_LUT_BASE;
 		offset = PCIE_LUT_DBG;
+	}
 
-	state = pex_lut_in32(pcie->dbi + PCIE_LUT_BASE + offset) &
+	state = pex_lut_in32(pcie->dbi + lut_base + offset) &
 		LTSSM_STATE_MASK;
 	if (state < LTSSM_PCIE_L0) {
 		debug("....PCIe link error. LTSSM=0x%02x.\n", state);
@@ -306,8 +313,7 @@ int pci_skip_dev(struct pci_controller *hose, pci_dev_t dev)
 
 static int ls_pcie_addr_valid(struct pci_controller *hose, pci_dev_t d)
 {
-//	if (PCI_DEV(d) > 0)
-	if (PCI_BUS(d) <= (hose->first_busno + 1) && PCI_DEV(d) > 0)  
+	if (PCI_BUS(d) <= (hose->first_busno + 1) && PCI_DEV(d) > 0)
 		return -EINVAL;
 
 	/* Controller does not support multi-function in RC mode */
@@ -322,6 +328,11 @@ static int ls_pcie_read_config(struct pci_controller *hose, pci_dev_t d,
 {
 	struct ls_pcie *pcie = hose->priv_data;
 	u32 busdev, *addr;
+	u32 bus, dev, func, atu_d;
+
+	bus = PCI_BUS(d); dev = PCI_DEV(d); func = PCI_FUNC(d);
+	bus = bus - hose->first_busno;
+	atu_d = PCI_BDF(bus, dev, func);
 
 	if (ls_pcie_addr_valid(hose, d)) {
 		*val = 0xffffffff;
@@ -331,9 +342,9 @@ static int ls_pcie_read_config(struct pci_controller *hose, pci_dev_t d,
 	if (PCI_BUS(d) == hose->first_busno) {
 		addr = pcie->dbi + (where & ~0x3);
 	} else {
-		busdev = PCIE_ATU_BUS(PCI_BUS(d)) |
-			 PCIE_ATU_DEV(PCI_DEV(d)) |
-			 PCIE_ATU_FUNC(PCI_FUNC(d));
+		busdev = PCIE_ATU_BUS(PCI_BUS(atu_d)) |
+			 PCIE_ATU_DEV(PCI_DEV(atu_d)) |
+			 PCIE_ATU_FUNC(PCI_FUNC(atu_d));
 
 		if (PCI_BUS(d) == hose->first_busno + 1) {
 			ls_pcie_cfg0_set_busdev(pcie, busdev);
@@ -354,6 +365,11 @@ static int ls_pcie_write_config(struct pci_controller *hose, pci_dev_t d,
 {
 	struct ls_pcie *pcie = hose->priv_data;
 	u32 busdev, *addr;
+	u32 bus, dev, func, atu_d;
+
+	bus = PCI_BUS(d); dev = PCI_DEV(d); func = PCI_FUNC(d);
+	bus = bus - hose->first_busno;
+	atu_d = PCI_BDF(bus, dev, func);
 
 	if (ls_pcie_addr_valid(hose, d))
 		return -EINVAL;
@@ -361,9 +377,9 @@ static int ls_pcie_write_config(struct pci_controller *hose, pci_dev_t d,
 	if (PCI_BUS(d) == hose->first_busno) {
 		addr = pcie->dbi + (where & ~0x3);
 	} else {
-		busdev = PCIE_ATU_BUS(PCI_BUS(d)) |
-			 PCIE_ATU_DEV(PCI_DEV(d)) |
-			 PCIE_ATU_FUNC(PCI_FUNC(d));
+		busdev = PCIE_ATU_BUS(PCI_BUS(atu_d)) |
+			 PCIE_ATU_DEV(PCI_DEV(atu_d)) |
+			 PCIE_ATU_FUNC(PCI_FUNC(atu_d));
 
 		if (PCI_BUS(d) == hose->first_busno + 1) {
 			ls_pcie_cfg0_set_busdev(pcie, busdev);
@@ -605,23 +621,49 @@ int ls_pcie_init_board(int busno)
 {
 	struct ls_pcie_info info;
 
+	u32 svr, ver;
+	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+
+	svr = gur_in32(&gur->svr);
+	ver = SVR_SOC_VER(svr);
+
 #ifdef CONFIG_PCIE1
-	SET_LS_PCIE_INFO(info, 1);
+	if ((ver == SVR_LS2088) || (ver == SVR_LS2084) ||
+	   (ver == SVR_LS2048) || (ver == SVR_LS2044)) {
+		SET_LS_PCIE_INFO(info, 1, _LS2088A);
+	} else
+		SET_LS_PCIE_INFO(info, 1);
+
 	busno = ls_pcie_init_ctrl(busno, PCIE1, &info);
 #endif
 
 #ifdef CONFIG_PCIE2
-	SET_LS_PCIE_INFO(info, 2);
+	if ((ver == SVR_LS2088) || (ver == SVR_LS2084) ||
+	   (ver == SVR_LS2048) || (ver == SVR_LS2044)) {
+		SET_LS_PCIE_INFO(info, 2, _LS2088A);
+	} else
+		SET_LS_PCIE_INFO(info, 2);
+
 	busno = ls_pcie_init_ctrl(busno, PCIE2, &info);
 #endif
 
 #ifdef CONFIG_PCIE3
-	SET_LS_PCIE_INFO(info, 3);
+	if ((ver == SVR_LS2088) || (ver == SVR_LS2084) ||
+	   (ver == SVR_LS2048) || (ver == SVR_LS2044)) {
+		SET_LS_PCIE_INFO(info, 3, _LS2088A);
+	} else
+		SET_LS_PCIE_INFO(info, 3);
+
 	busno = ls_pcie_init_ctrl(busno, PCIE3, &info);
 #endif
 
 #ifdef CONFIG_PCIE4
-	SET_LS_PCIE_INFO(info, 4);
+	if ((ver == SVR_LS2088) || (ver == SVR_LS2084) ||
+	   (ver == SVR_LS2048) || (ver == SVR_LS2044)) {
+		SET_LS_PCIE_INFO(info, 4, _LS2088A);
+	} else
+		SET_LS_PCIE_INFO(info, 4);
+
 	busno = ls_pcie_init_ctrl(busno, PCIE4, &info);
 #endif
 

@@ -308,18 +308,6 @@ cmd_acpi_c_asl=         \
 $(obj)/%.c:    $(src)/%.asl
 	$(call cmd,acpi_c_asl)
 
-# ITB
-# ---------------------------------------------------------------------------
-HOSTMKIMAGE= $(objtree)/tools/mkimage
-
-quiet_cmd_pack_dtb= ITB     $@
-cmd_pack_dtb= [ $(objtree) = $(srctree) ] || cp $< $(obj); \
-	$(HOSTMKIMAGE) -f $(obj)/$(notdir $<) $@ \
-	$(if $(KBUILD_VERBOSE:1=), >/dev/null)
-
-$(obj)/%.itb:    $(src)/%.its
-	$(call cmd,pack_dtb)
-
 # Bzip2
 # ---------------------------------------------------------------------------
 

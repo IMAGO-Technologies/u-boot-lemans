@@ -19,6 +19,7 @@
 #include <i2c.h>
 #include <asm/arch/soc.h>
 #include <fsl_sec.h>
+#include <asm/arch/ppa.h>
 
 #include "../common/qixis.h"
 #include "ls2080ardb_qixis.h"
@@ -150,10 +151,44 @@ int config_board_mux(int ctrl_type)
 	return 0;
 }
 
+void set_fan_speed(void)
+{
+	int ret, i;
+	u8 value;
+
+	select_i2c_ch_pca9547(I2C_MUX_CH_FAN);
+	value = 0x80;
+	ret = i2c_write(CONFIG_SYS_I2C_FAN_ADDR, 0x0, 1, &value, 1);
+	if (ret) {
+		printf("Fan: Failed to set fan speed\n");
+		return;
+	}
+	value = 1;
+	ret = i2c_write(CONFIG_SYS_I2C_FAN_ADDR, 0x58, 1, &value, 1);
+	if (ret) {
+		printf("Fan: Failed to set fan speed\n");
+		return;
+	}
+
+	/* set PWM = ~50% DCyc for all rear PWM fans */
+	value = 0x20;
+	for (i = 0xb4; i < 0xb9; i++) {
+		ret = i2c_write(CONFIG_SYS_I2C_FAN_ADDR, i, 1, &value, 1);
+		if (ret) {
+			printf("Fan: Failed to set fan speed\n");
+			return;
+		}
+	}
+}
+
 int board_init(void)
 {
 	char *env_hwconfig;
 	u32 __iomem *dcfg_ccsr = (u32 __iomem *)DCFG_BASE;
+#ifdef CONFIG_FSL_LS_PPA
+	u64 ppa_entry;
+#endif
+
 #ifdef CONFIG_FSL_MC_ENET
 	u32 __iomem *irq_ccsr = (u32 __iomem *)ISC_BASE;
 #endif
@@ -174,6 +209,7 @@ int board_init(void)
 #ifdef CONFIG_ENV_IS_NOWHERE
 	gd->env_addr = (ulong)&default_environment[0];
 #endif
+	set_fan_speed();
 	select_i2c_ch_pca9547(I2C_MUX_CH_DEFAULT);
 
 	QIXIS_WRITE(rst_ctl, QIXIS_RST_CTL_RESET_EN);
@@ -183,6 +219,16 @@ int board_init(void)
 	out_le32(irq_ccsr + IRQCR_OFFSET / 4, AQR405_IRQ_MASK);
 #endif
 
+#ifdef CONFIG_FSL_CAAM
+	sec_init();
+#endif
+
+#ifdef CONFIG_FSL_LS_PPA
+	ppa_init_pre(&ppa_entry);
+
+	if (ppa_entry)
+		ppa_init_entry((void *)ppa_entry);
+#endif
 	return 0;
 }
 
@@ -229,9 +275,6 @@ int arch_misc_init(void)
 {
 #ifdef CONFIG_FSL_DEBUG_SERVER
 	debug_server_init();
-#endif
-#ifdef CONFIG_FSL_CAAM
-	sec_init();
 #endif
 	return 0;
 }

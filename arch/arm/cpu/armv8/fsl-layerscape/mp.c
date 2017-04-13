@@ -90,7 +90,14 @@ int fsl_layerscape_wake_seconday_cores(void)
 		 * power spikes
 		 */
 		i = 0;
-		cluster_cores = (cpu_numcores()/cpu_numclusters());
+		cluster = in_le32(&gur->tp_cluster[i].lower);
+		for (j = 0; j < TP_INIT_PER_CLUSTER; j++) {
+			type = initiator_type(cluster, j);
+			if (type &&
+			    TP_ITYP_TYPE(type) == TP_ITYP_TYPE_ARM)
+				cluster_cores++;
+		}
+
 		do {
 			cluster = in_le32(&gur->tp_cluster[i].lower);
 			for (j = 0; j < TP_INIT_PER_CLUSTER; j++) {

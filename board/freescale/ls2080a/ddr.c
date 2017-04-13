@@ -161,11 +161,14 @@ phys_size_t initdram(int board_type)
 {
 	phys_size_t dram_size;
 
+#if defined(CONFIG_SPL) && !defined(CONFIG_SPL_BUILD)
+	return fsl_ddr_sdram_size();
+#else
 	puts("Initializing DDR....");
 
 	puts("using SPD\n");
 	dram_size = fsl_ddr_sdram();
-
+#endif
 	return dram_size;
 }
 

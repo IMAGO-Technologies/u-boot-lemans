@@ -28,6 +28,8 @@
 #define CONFIG_SYS_FSL_TIMER_ADDR		0x023e0000
 #define CONFIG_SYS_FSL_PMU_CLTBENR		(CONFIG_SYS_FSL_PMU_ADDR + \
 						 0x18A0)
+#define FSL_PMU_PCTBENR_OFFSET	(CONFIG_SYS_FSL_PMU_ADDR + 0x8A0)
+
 #define FSL_LSCH3_SVR				(CONFIG_SYS_FSL_GUTS_ADDR + \
 						 0xA4)
 
@@ -102,10 +104,10 @@
 #define CONFIG_SYS_PCIE2_PHYS_ADDR              0x2800000000ULL
 #define CONFIG_SYS_PCIE3_PHYS_ADDR              0x3000000000ULL
 #else
-#define CONFIG_SYS_PCIE1_PHYS_ADDR		0x2000000000ULL
-#define CONFIG_SYS_PCIE2_PHYS_ADDR		0x2800000000ULL
-#define CONFIG_SYS_PCIE3_PHYS_ADDR		0x3000000000ULL
-#define CONFIG_SYS_PCIE4_PHYS_ADDR		0x3800000000ULL
+#define CONFIG_SYS_PCIE1_PHYS_ADDR		0x1000000000ULL
+#define CONFIG_SYS_PCIE2_PHYS_ADDR		0x1200000000ULL
+#define CONFIG_SYS_PCIE3_PHYS_ADDR		0x1400000000ULL
+#define CONFIG_SYS_PCIE4_PHYS_ADDR		0x1600000000ULL
 #endif
 /* LUT registers */
 #define PCIE_LUT_BASE				0x80000
@@ -193,14 +195,15 @@ struct ccsr_gur {
 	u8	res_008[0x20-0x8];
 	u32	gpporcr1;	/* General-purpose POR configuration */
 	u32	gpporcr2;	/* General-purpose POR configuration 2 */
-#define FSL_CHASSIS3_DCFG_FUSESR_VID_SHIFT	25
-#define FSL_CHASSIS3_DCFG_FUSESR_VID_MASK	0x1F
-#define FSL_CHASSIS3_DCFG_FUSESR_ALTVID_SHIFT	20
-#define FSL_CHASSIS3_DCFG_FUSESR_ALTVID_MASK	0x1F
-	u32	dcfg_fusesr;	/* Fuse status register */
 	u32	gpporcr3;
 	u32	gpporcr4;
-	u8	res_034[0x70-0x34];
+	u8	res_030[0x60 - 0x30];
+#define FSL_CHASSIS3_DCFG_FUSESR_VID_SHIFT	2
+#define FSL_CHASSIS3_DCFG_FUSESR_ALTVID_SHIFT 7
+#define FSL_CHASSIS3_DCFG_FUSESR_VID_MASK	0x1F
+#define FSL_CHASSIS3_DCFG_FUSESR_ALTVID_MASK	0x1F
+	u32	dcfg_fusesr;	/* Fuse status register */
+	u8	res_034[0x70 - 0x64];
 	u32	devdisr;	/* Device disable control */
 	u32	devdisr2;	/* Device disable control 2 */
 	u32	devdisr3;	/* Device disable control 3 */

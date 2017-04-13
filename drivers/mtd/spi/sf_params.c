@@ -67,6 +67,8 @@ const struct spi_flash_params spi_flash_params_table[] = {
 	{"S25FL128S_64K",  0x012018, 0x4d01,    64 * 1024,   256, RD_FULL,		     WR_QPP},
 	{"S25FL256S_256K", 0x010219, 0x4d00,   256 * 1024,   128, RD_FULL,		     WR_QPP},
 	{"S25FL256S_64K",  0x010219, 0x4d01,	64 * 1024,   512, RD_FULL,		     WR_QPP},
+	{"S25FS512S",	   0x010220, 0x0102,	256 * 1024,  256, RD_FULL,		WR_QPP},
+	{"S25FS512S_256K", 0x010220, 0x4D00,	128 * 1024,  512, RD_FULL,		WR_QPP},
 	{"S25FL512S_256K", 0x010220, 0x4d00,   256 * 1024,   256, RD_FULL,		     WR_QPP},
 	{"S25FL512S_64K",  0x010220, 0x4d01,    64 * 1024,  1024, RD_FULL,		     WR_QPP},
 	{"S25FL512S_512K", 0x010220, 0x4f00,   256 * 1024,   256, RD_FULL,		     WR_QPP},
@@ -92,7 +94,7 @@ const struct spi_flash_params spi_flash_params_table[] = {
 	{"N25Q256",	   0x20ba19, 0x0,       64 * 1024,   512, RD_FULL,	   WR_QPP | SECT_4K},
 	{"N25Q256A",	   0x20bb19, 0x0,       64 * 1024,   512, RD_FULL,	   WR_QPP | SECT_4K},
 	{"N25Q512",	   0x20ba20, 0x0,       64 * 1024,  1024, RD_FULL, WR_QPP | E_FSR | SECT_4K},
-	{"N25Q512A",	   0x20bb20, 0x0,       64 * 1024,  1024, RD_FULL, WR_QPP | E_FSR | SECT_4K},
+	{"N25Q512A",	   0x20bb20, 0x0,       64 * 1024,  256, RD_FULL, WR_QPP | E_FSR | SECT_4K},
 	{"N25Q1024",	   0x20ba21, 0x0,       64 * 1024,  2048, RD_FULL, WR_QPP | E_FSR | SECT_4K},
 	{"N25Q1024A",	   0x20bb21, 0x0,       64 * 1024,  2048, RD_FULL, WR_QPP | E_FSR | SECT_4K},
 #endif

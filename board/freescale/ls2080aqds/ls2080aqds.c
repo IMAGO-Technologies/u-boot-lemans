@@ -20,7 +20,9 @@
 #include <asm/arch/soc.h>
 #include <hwconfig.h>
 #include <fsl_sec.h>
-
+#ifdef CONFIG_FSL_LS_PPA
+#include <asm/arch/ppa.h>
+#endif
 #include "../common/qixis.h"
 #include "ls2080aqds_qixis.h"
 
@@ -195,6 +197,9 @@ int board_init(void)
 {
 	char *env_hwconfig;
 	u32 __iomem *dcfg_ccsr = (u32 __iomem *)DCFG_BASE;
+#ifdef CONFIG_FSL_LS_PPA
+	u64 ppa_entry;
+#endif
 	u32 val;
 
 	init_final_memctl_regs();
@@ -224,6 +229,12 @@ int board_init(void)
 	select_i2c_ch_pca9547(I2C_MUX_CH_DEFAULT);
 	rtc_enable_32khz_output();
 
+#ifdef CONFIG_FSL_LS_PPA
+	ppa_init_pre(&ppa_entry);
+
+	if (ppa_entry)
+		ppa_init_entry((void *)ppa_entry);
+#endif
 	return 0;
 }
 

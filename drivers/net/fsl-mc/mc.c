@@ -28,6 +28,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 static int mc_boot_status = -1;
 static int mc_dpl_applied = -1;
+static u64 mc_ram_aligned_base_addr;
 #ifdef CONFIG_SYS_LS_MC_DRAM_AIOP_IMG_OFFSET
 static int mc_aiop_applied = -1;
 #endif
@@ -86,12 +87,15 @@ void dump_mc_ccsr_regs(struct mc_ccsr_registers __iomem *mc_ccsr_regs)
 /**
  * Copying MC firmware or DPL image to DDR
  */
-static int mc_copy_image(const char *title,
-			 u64 image_addr, u32 image_size, u64 mc_ram_addr)
+static int mc_copy_image(const char *title, u64 image_addr,
+			 u32 image_size, u64 mc_ram_aligned_base_addr)
 {
-	debug("%s copied to address %p\n", title, (void *)mc_ram_addr);
-	memcpy((void *)mc_ram_addr, (void *)image_addr, image_size);
-	flush_dcache_range(mc_ram_addr, mc_ram_addr + image_size);
+	debug("%s copied to address %p\n", title,
+	      (void *)mc_ram_aligned_base_addr);
+	memcpy((void *)mc_ram_aligned_base_addr,
+	       (void *)image_addr, image_size);
+	flush_dcache_range(mc_ram_aligned_base_addr,
+			   mc_ram_aligned_base_addr + image_size);
 	return 0;
 }
 
@@ -223,7 +227,8 @@ static int mc_fixup_dpc(u64 dpc_addr)
 	return 0;
 }
 
-static int load_mc_dpc(u64 mc_ram_addr, size_t mc_ram_size, u64 mc_dpc_addr)
+static int load_mc_dpc(u64 mc_ram_aligned_base_addr, size_t mc_ram_size,
+		u64 mc_dpc_addr)
 {
 	u64 mc_dpc_offset;
 #ifndef CONFIG_SYS_LS_MC_DPC_IN_DDR
@@ -245,7 +250,8 @@ static int load_mc_dpc(u64 mc_ram_addr, size_t mc_ram_size, u64 mc_dpc_addr)
 	 * Load the MC DPC blob in the MC private DRAM block:
 	 */
 #ifdef CONFIG_SYS_LS_MC_DPC_IN_DDR
-	printf("MC DPC is preloaded to %#llx\n", mc_ram_addr + mc_dpc_offset);
+	printf("MC DPC is preloaded to %#llx\n",
+	       mc_ram_aligned_base_addr + mc_dpc_offset);
 #else
 	/*
 	 * Get address and size of the DPC blob stored in flash:
@@ -270,17 +276,20 @@ static int load_mc_dpc(u64 mc_ram_addr, size_t mc_ram_size, u64 mc_dpc_addr)
 	}
 
 	mc_copy_image("MC DPC blob",
-		      (u64)dpc_fdt_hdr, dpc_size, mc_ram_addr + mc_dpc_offset);
+		      (u64)dpc_fdt_hdr, dpc_size,
+			mc_ram_aligned_base_addr + mc_dpc_offset);
 #endif /* not defined CONFIG_SYS_LS_MC_DPC_IN_DDR */
 
-	if (mc_fixup_dpc(mc_ram_addr + mc_dpc_offset))
+	if (mc_fixup_dpc(mc_ram_aligned_base_addr + mc_dpc_offset))
 		return -EINVAL;
 
-	dump_ram_words("DPC", (void *)(mc_ram_addr + mc_dpc_offset));
+	dump_ram_words("DPC",
+		       (void *)(mc_ram_aligned_base_addr + mc_dpc_offset));
 	return 0;
 }
 
-static int load_mc_dpl(u64 mc_ram_addr, size_t mc_ram_size, u64 mc_dpl_addr)
+static int load_mc_dpl(u64 mc_ram_aligned_base_addr, size_t mc_ram_size,
+			u64 mc_dpl_addr)
 {
 	u64 mc_dpl_offset;
 #ifndef CONFIG_SYS_LS_MC_DPL_IN_DDR
@@ -302,7 +311,8 @@ static int load_mc_dpl(u64 mc_ram_addr, size_t mc_ram_size, u64 mc_dpl_addr)
 	 * Load the MC DPL blob in the MC private DRAM block:
 	 */
 #ifdef CONFIG_SYS_LS_MC_DPL_IN_DDR
-	printf("MC DPL is preloaded to %#llx\n", mc_ram_addr + mc_dpl_offset);
+	printf("MC DPL is preloaded to %#llx\n",
+	       mc_ram_aligned_base_addr + mc_dpl_offset);
 #else
 	/*
 	 * Get address and size of the DPL blob stored in flash:
@@ -323,10 +333,12 @@ static int load_mc_dpl(u64 mc_ram_addr, size_t mc_ram_size, u64 mc_dpl_addr)
 	}
 
 	mc_copy_image("MC DPL blob",
-		      (u64)dpl_fdt_hdr, dpl_size, mc_ram_addr + mc_dpl_offset);
+		      (u64)dpl_fdt_hdr, dpl_size,
+			mc_ram_aligned_base_addr + mc_dpl_offset);
 #endif /* not defined CONFIG_SYS_LS_MC_DPL_IN_DDR */
 
-	dump_ram_words("DPL", (void *)(mc_ram_addr + mc_dpl_offset));
+	dump_ram_words("DPL",
+		       (void *)(mc_ram_aligned_base_addr + mc_dpl_offset));
 	return 0;
 }
 
@@ -357,7 +369,6 @@ static unsigned long get_mc_boot_timeout_ms(void)
 #ifdef CONFIG_SYS_LS_MC_DRAM_AIOP_IMG_OFFSET
 static int load_mc_aiop_img(u64 aiop_fw_addr)
 {
-	u64 mc_ram_addr = mc_get_dram_addr();
 #ifndef CONFIG_SYS_LS_MC_DPC_IN_DDR
 	void *aiop_img;
 #endif
@@ -367,13 +378,14 @@ static int load_mc_aiop_img(u64 aiop_fw_addr)
 	 */
 
 #ifdef CONFIG_SYS_LS_MC_DPC_IN_DDR
-	printf("MC AIOP is preloaded to %#llx\n", mc_ram_addr +
+	printf("MC AIOP is preloaded to %#llx\n", mc_ram_aligned_base_addr +
 	       CONFIG_SYS_LS_MC_DRAM_AIOP_IMG_OFFSET);
 #else
 	aiop_img = (void *)aiop_fw_addr;
 	mc_copy_image("MC AIOP image",
 		      (u64)aiop_img, CONFIG_SYS_LS_MC_AIOP_IMG_MAX_LENGTH,
-		      mc_ram_addr + CONFIG_SYS_LS_MC_DRAM_AIOP_IMG_OFFSET);
+		       mc_ram_aligned_base_addr +
+		       CONFIG_SYS_LS_MC_DRAM_AIOP_IMG_OFFSET);
 #endif
 	mc_aiop_applied = 0;
 
@@ -440,7 +452,6 @@ int mc_init(u64 mc_fw_addr, u64 mc_dpc_addr)
 	size_t raw_image_size = 0;
 #endif
 	struct mc_version mc_ver_info;
-	u64 mc_ram_aligned_base_addr;
 	u8 mc_ram_num_256mb_blocks;
 	size_t mc_ram_size = mc_get_dram_block_size();
 
@@ -468,7 +479,7 @@ int mc_init(u64 mc_fw_addr, u64 mc_dpc_addr)
 	dmb();
 
 #ifdef CONFIG_SYS_LS_MC_FW_IN_DDR
-	printf("MC firmware is preloaded to %#llx\n", mc_ram_addr);
+	printf("MC firmware is preloaded to %#llx\n", mc_ram_aligned_base_addr);
 #else
 	error = parse_mc_firmware_fit_image(mc_fw_addr, &raw_image_addr,
 					    &raw_image_size);
@@ -478,11 +489,12 @@ int mc_init(u64 mc_fw_addr, u64 mc_dpc_addr)
 	 * Load the MC FW at the beginning of the MC private DRAM block:
 	 */
 	mc_copy_image("MC Firmware",
-		      (u64)raw_image_addr, raw_image_size, mc_ram_addr);
+		      (u64)raw_image_addr, raw_image_size,
+		      mc_ram_aligned_base_addr);
 #endif
-	dump_ram_words("firmware", (void *)mc_ram_addr);
+	dump_ram_words("firmware", (void *)mc_ram_aligned_base_addr);
 
-	error = load_mc_dpc(mc_ram_addr, mc_ram_size, mc_dpc_addr);
+	error = load_mc_dpc(mc_ram_aligned_base_addr, mc_ram_size, mc_dpc_addr);
 	if (error != 0)
 		goto out;
 
@@ -559,10 +571,9 @@ int mc_apply_dpl(u64 mc_dpl_addr)
 	struct mc_ccsr_registers __iomem *mc_ccsr_regs = MC_CCSR_BASE_ADDR;
 	int error = 0;
 	u32 reg_gsr;
-	u64 mc_ram_addr = mc_get_dram_addr();
 	size_t mc_ram_size = mc_get_dram_block_size();
 
-	error = load_mc_dpl(mc_ram_addr, mc_ram_size, mc_dpl_addr);
+	error = load_mc_dpl(mc_ram_aligned_base_addr, mc_ram_size, mc_dpl_addr);
 	if (error != 0)
 		return error;
 

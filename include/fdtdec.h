@@ -994,7 +994,6 @@ int fdtdec_decode_display_timing(const void *blob, int node, int index,
 /**
  * Set up the device tree ready for use
  */
-void unpack_packed_dtb(void);
 int fdtdec_setup(void);
 
 #endif

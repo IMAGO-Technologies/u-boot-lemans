@@ -12,22 +12,18 @@ ifeq ($(DEVICE_TREE),)
 DEVICE_TREE := unset
 endif
 
-PACKED_DEVICE_TREE ?= $(CONFIG_PACKED_DEVICE_TREE:"%"=%)
-ifeq ($(PACKED_DEVICE_TREE),)
 ifneq ($(EXT_DTB),)
 DTB := $(EXT_DTB)
 else
 DTB := arch/$(ARCH)/dts/$(DEVICE_TREE).dtb
 endif
-else
-ITB_TARGET += itb-targets
-DTB := arch/$(ARCH)/dts/$(PACKED_DEVICE_TREE).itb
-endif
 
 $(obj)/dt.dtb: $(DTB) FORCE
 	$(call if_changed,shipped)
 
-$(DTB): arch-dtbs $(ITB_TARGET)
+targets += dt.dtb
+
+$(DTB): arch-dtbs
 	$(Q)test -e $@ || (						\
 	echo >&2;							\
 	echo >&2 "Device Tree Source is not correctly specified.";	\
@@ -38,8 +34,6 @@ $(DTB): arch-dtbs $(ITB_TARGET)
 
 arch-dtbs:
 	$(Q)$(MAKE) $(build)=arch/$(ARCH)/dts dtbs
-itb-targets: arch-dtbs
-	$(Q)$(MAKE) $(build)=arch/$(ARCH)/dts itbs
 
 .SECONDARY: $(obj)/dt.dtb.S
 

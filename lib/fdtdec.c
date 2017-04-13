@@ -1217,11 +1217,6 @@ int fdtdec_decode_display_timing(const void *blob, int parent, int index,
 	return 0;
 }
 
-__weak void unpack_packed_dtb(void)
-{
-	return;
-}
-
 int fdtdec_setup(void)
 {
 #if CONFIG_IS_ENABLED(OF_CONTROL)
@@ -1251,7 +1246,6 @@ int fdtdec_setup(void)
 						(uintptr_t)gd->fdt_blob);
 # endif
 #endif
-	unpack_packed_dtb();
 //	printf("fdt_blob: 0x%p\n", gd->fdt_blob);
 	return fdtdec_prepare_fdt();
 }

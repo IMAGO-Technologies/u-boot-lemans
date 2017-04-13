@@ -51,42 +51,6 @@ void cpu_name(char *name)
 		strcpy(name, "unknown");
 }
 
-void unpack_packed_dtb(void)
-{
-#ifndef CONFIG_TARGET_VISIONBOX_LEMANS
-        int noffset;
-        size_t size;
-        const void *img_addr, *fit;
-
-        struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
-        unsigned int svr, ver;
-
-        svr = gur_in32(&gur->svr);
-        ver = SVR_SOC_VER(svr);
-        fit = gd->fdt_blob;
-        switch(ver) {
-                case SVR_LS2080:
-                case SVR_LS2040:
-                case SVR_LS2085:
-                case SVR_LS2045:
-                        noffset = fit_image_get_node(fit, "ls2080a");
-                        break;
-                case SVR_LS2088:
-                case SVR_LS2084:
-                case SVR_LS2048:
-                case SVR_LS2044:
-                        noffset = fit_image_get_node(fit, "ls2088a");
-			break;
-                default:
-                        hang();
-        }
-        fit_image_get_data(fit, noffset, &img_addr, &size);
-
-        gd->fdt_blob = (ulong *)img_addr;
-        return;
-#endif
-}
-
 #ifndef CONFIG_SYS_DCACHE_OFF
 /*
  * Set the block entries according to the information of the table.
@@ -369,6 +333,8 @@ static inline void final_mmu_setup(void)
 			  CONFIG_SYS_FSL_QBMAN_BASE >> SECTION_SHIFT_L1,
 			  level2_table2);
 #endif
+	/* fix the final_mmu_table before filling in the block entries */
+	fix_final_mmu_table();
 
 	/* Find the table and fill in the block entries */
 	for (i = 0; i < ARRAY_SIZE(final_mmu_table); i++) {
@@ -494,23 +460,6 @@ u32 cpu_mask(void)
 int cpu_numcores(void)
 {
 	return hweight32(cpu_mask());
-}
-
-/*
- * Return the number of clusters on this SOC.
- */
-int cpu_numclusters(void)
-{
-	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
-	int i = 0;
-	u32 cluster;
-
-	do {
-		cluster = gur_in32(&gur->tp_cluster[i].lower);
-		i++;
-	} while ((cluster & TP_CLUSTER_EOC) == 0x0);
-
-	return i;
 }
 
 int fsl_qoriq_core_to_cluster(unsigned int core)
@@ -688,12 +637,15 @@ int timer_init(void)
 	u32 svr, ver;
 	u32 __iomem *cltbenr = (u32 *)CONFIG_SYS_FSL_PMU_CLTBENR;
 #endif
+
 #ifdef COUNTER_FREQUENCY_REAL
 	unsigned long cntfrq = COUNTER_FREQUENCY_REAL;
 
 	/* Update with accurate clock frequency */
 	asm volatile("msr cntfrq_el0, %0" : : "r" (cntfrq) : "memory");
 #endif
+	u32 __iomem *pctbenr = (u32 *)FSL_PMU_PCTBENR_OFFSET;
+	u32 pmu_val;
 
 #ifdef CONFIG_FSL_LSCH3
 	svr = gur_in32(&gur->svr);
@@ -711,6 +663,15 @@ int timer_init(void)
 	 */
 	out_le32(cltbenr, 0xf);
 #endif
+
+	/*
+	 * In certain Layerscape SoCs, the clock for each core's
+	 * has an enable bit in the PMU Physical Core Time Base Enable
+	 * Register (PCTBENR), which allows the watchdog to operate.
+	 */
+	pmu_val = in_le32(pctbenr);
+	pmu_val |= 0xff;
+	out_le32(pctbenr, pmu_val);
 
 	/* Enable clock for timer
 	 * This is a global setting.
@@ -750,4 +711,47 @@ phys_size_t board_reserve_ram_top(phys_size_t ram_size)
 #endif
 
 	return ram_top;
+}
+
+void fix_final_mmu_table(void)
+{
+#if defined(CONFIG_LS2080A) || defined(CONFIG_LS2085A)
+	unsigned int i;
+	u32 svr, ver;
+	struct ccsr_gur __iomem *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
+
+	svr = gur_in32(&gur->svr);
+	ver = SVR_SOC_VER(svr);
+
+	/* Fix PCIE base and size for LS2088A */
+	if ((ver == SVR_LS2088) || (ver == SVR_LS2084) ||
+	   (ver == SVR_LS2048) || (ver == SVR_LS2044)) {
+		for (i = 0; i < ARRAY_SIZE(final_mmu_table); i++) {
+			switch (final_mmu_table[i].phys_addr) {
+			case CONFIG_SYS_PCIE1_PHYS_ADDR:
+				final_mmu_table[i].phys_addr = 0x2000000000ULL;
+				final_mmu_table[i].virt_addr = 0x2000000000ULL;
+				final_mmu_table[i].size = 0x800000000ULL;
+				break;
+			case CONFIG_SYS_PCIE2_PHYS_ADDR:
+				final_mmu_table[i].phys_addr = 0x2800000000ULL;
+				final_mmu_table[i].virt_addr = 0x2800000000ULL;
+				final_mmu_table[i].size = 0x800000000ULL;
+				break;
+			case CONFIG_SYS_PCIE3_PHYS_ADDR:
+				final_mmu_table[i].phys_addr = 0x3000000000ULL;
+				final_mmu_table[i].virt_addr = 0x3000000000ULL;
+				final_mmu_table[i].size = 0x800000000ULL;
+				break;
+			case CONFIG_SYS_PCIE4_PHYS_ADDR:
+				final_mmu_table[i].phys_addr = 0x3800000000ULL;
+				final_mmu_table[i].virt_addr = 0x3800000000ULL;
+				final_mmu_table[i].size = 0x800000000ULL;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+#endif
 }

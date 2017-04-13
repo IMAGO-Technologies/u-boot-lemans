@@ -143,11 +143,13 @@ static void erratum_a008336(void)
 
 #ifdef CONFIG_SYS_FSL_DCSR_DDR_ADDR
 	eddrtqcr1 = (void *)CONFIG_SYS_FSL_DCSR_DDR_ADDR + 0x800;
-	out_le32(eddrtqcr1, 0x63b30002);
+	if (fsl_ddr_get_version(0) == 0x50200)
+		out_le32(eddrtqcr1, 0x63b30002);
 #endif
 #ifdef CONFIG_SYS_FSL_DCSR_DDR2_ADDR
 	eddrtqcr1 = (void *)CONFIG_SYS_FSL_DCSR_DDR2_ADDR + 0x800;
-	out_le32(eddrtqcr1, 0x63b30002);
+	if (fsl_ddr_get_version(0) == 0x50200)
+		out_le32(eddrtqcr1, 0x63b30002);
 #endif
 #endif
 }
@@ -343,10 +345,13 @@ int sata_init(void)
 {
 	struct ccsr_ahci __iomem *ccsr_ahci;
 
+#ifdef CONFIG_SYS_SATA2
 	ccsr_ahci  = (void *)CONFIG_SYS_SATA2;
 	out_le32(&ccsr_ahci->ppcfg, AHCI_PORT_PHY_1_CFG);
 	out_le32(&ccsr_ahci->ptc, AHCI_PORT_TRANS_CFG);
+#endif
 
+#ifdef CONFIG_SYS_SATA1
 	ccsr_ahci  = (void *)CONFIG_SYS_SATA1;
 	out_le32(&ccsr_ahci->ppcfg, AHCI_PORT_PHY_1_CFG);
 	out_le32(&ccsr_ahci->ptc, AHCI_PORT_TRANS_CFG);
@@ -354,6 +359,7 @@ int sata_init(void)
 	ahci_init((void __iomem *)CONFIG_SYS_SATA1);
 	scsi_scan(0);
 
+#endif
 	return 0;
 }
 #endif

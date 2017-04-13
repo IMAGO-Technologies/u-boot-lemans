@@ -9,6 +9,17 @@
 
 #include "ls2080a_common.h"
 
+#define CONFIG_FSL_LS_PPA
+#if defined(CONFIG_FSL_LS_PPA)
+#define CONFIG_ARMV8_PSCI
+#define CONFIG_SYS_LS_PPA_DRAM_BLOCK_MIN_SIZE	(1UL * 1024 * 1024)
+
+#define CONFIG_SYS_LS_PPA_FW_IN_XIP
+#ifdef CONFIG_SYS_LS_PPA_FW_IN_XIP
+#define CONFIG_SYS_LS_PPA_FW_ADDR		0x580a00000
+#endif
+#endif
+
 #undef CONFIG_CONS_INDEX
 #define CONFIG_CONS_INDEX       2
 
@@ -57,6 +68,11 @@ unsigned long get_board_sys_clk(void);
 #define CONFIG_DP_DDR_DIMM_SLOTS_PER_CTLR	1
 #endif
 #define CONFIG_FSL_DDR_BIST	/* enable built-in memory test */
+
+/* GPT */
+#define CONFIG_PARTITION_UUIDS
+#define CONFIG_EFI_PARTITION
+#define CONFIG_CMD_GPT
 
 /* SATA */
 #define CONFIG_LIBATA
@@ -269,6 +285,7 @@ unsigned long get_board_sys_clk(void);
 
 /* I2C bus multiplexer */
 #define I2C_MUX_CH_DEFAULT      0x8
+#define	I2C_MUX_CH_FAN		0xd
 
 /* SPI */
 #ifdef CONFIG_FSL_DSPI
@@ -285,6 +302,11 @@ unsigned long get_board_sys_clk(void);
 #define CONFIG_RTC_DS3231               1
 #define CONFIG_SYS_I2C_RTC_ADDR         0x68
 #define CONFIG_CMD_DATE
+
+/*
+ * Winbond fan controller
+ */
+#define CONFIG_SYS_I2C_FAN_ADDR		0x2c
 
 /* EEPROM */
 #define CONFIG_ID_EEPROM
@@ -334,6 +356,7 @@ unsigned long get_board_sys_clk(void);
 
 /* Initial environment variables */
 #undef CONFIG_EXTRA_ENV_SETTINGS
+#ifndef CONFIG_SECURE_BOOT
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	"hwconfig=fsl_ddr:bank_intlv=auto\0"	\
 	"loadaddr=0x80100000\0"			\
@@ -345,8 +368,27 @@ unsigned long get_board_sys_clk(void);
 	"kernel_start=0x581100000\0"		\
 	"kernel_load=0xa0000000\0"		\
 	"kernel_size=0x2800000\0"		\
+	"mcmemsize=0x40000000\0"		\
 	"mcinitcmd=fsl_mc start mc 0x580300000"	\
 	" 0x580800000 \0"
+#else
+#define CONFIG_EXTRA_ENV_SETTINGS		\
+	"hwconfig=fsl_ddr:bank_intlv=auto\0"	\
+	"loadaddr=0x80100000\0"			\
+	"kernel_addr=0x100000\0"		\
+	"ramdisk_addr=0x800000\0"		\
+	"ramdisk_size=0x2000000\0"		\
+	"fdt_high=0xa0000000\0"			\
+	"initrd_high=0xffffffffffffffff\0"	\
+	"kernel_start=0x581100000\0"		\
+	"kernel_load=0xa0000000\0"		\
+	"kernel_size=0x2800000\0"		\
+	"mcmemsize=0x40000000\0"		\
+	"mcinitcmd=esbc_validate 0x580c80000;"	\
+	"esbc_validate 0x580cc0000;"		\
+	"fsl_mc start mc 0x580300000"		\
+	" 0x580800000 \0"
+#endif
 
 #undef CONFIG_BOOTARGS
 #define CONFIG_BOOTARGS		"console=ttyS1,115200 root=/dev/ram0 " \

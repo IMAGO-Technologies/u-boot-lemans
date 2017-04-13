@@ -26,8 +26,22 @@ ENTRY(lowlevel_init)
 	ldr	x0, =CCI_AUX_CONTROL_BASE(20)
 	ldr	x1, =0x00000010
 	bl	ccn504_set_aux
-#endif
 
+	bl	svr_dev_id		/* get high 16 bits of SVR */
+	/*
+	 * Skip RNI update for LS2080 and its personalities
+	 */
+	ldr	x1, =SVR_DEV_LS2080
+	cmp	x0, x1
+	b.eq	1f
+	ldr	x0, =CCI_AUX_CONTROL_BASE(6)
+	ldr	x1, =0x00000020
+	bl	ccn504_set_aux
+	ldr	x0, =CCI_AUX_CONTROL_BASE(20)
+	ldr	x1, =0x00000020
+	bl	ccn504_set_aux
+#endif
+1:
 	/* Add fully-coherent masters to DVM domain */
 	ldr	x0, =CCI_MN_BASE
 	ldr	x1, =CCI_MN_RNF_NODEID_LIST

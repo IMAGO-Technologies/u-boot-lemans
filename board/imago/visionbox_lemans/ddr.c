@@ -168,6 +168,10 @@ void fsl_ddr_board_options(memctl_options_t *popts,
 	/* Enable ZQ calibration */
 	popts->zq_en = 1;
 
+	/* Enable DDR hashing */
+	if (fsl_ddr_get_version(0) == 0x50201)
+		popts->addr_hash = 1;
+
 	if (ddr_freq < 2350) {
 		if (pdimm[0].n_ranks == 2 && pdimm[1].n_ranks == 2) {
 			/* four chip-selects */

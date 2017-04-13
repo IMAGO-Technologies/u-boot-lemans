@@ -22,13 +22,13 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define MC_BOOT_ENV_VAR "mcinitcmd"
 
+int select_i2c_ch_pca9547(uint8_t ch);
+
 /* U-Boot command fixup_dpl: Copy MAC address information from the environment
  * to the Data Path Layout.
  */
 static int do_fixup_dpl(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char env_eth[40];
-	char *eth_mac;
 	char dpni[40];
 	int offset;
 	int i;
@@ -65,6 +65,8 @@ static int do_fixup_dpl(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 		}
 		fdt_setprop(dpl_fdt_hdr, offset, "mac_addr", mac_dt, sizeof(mac_dt));
 	}
+	
+	return CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
