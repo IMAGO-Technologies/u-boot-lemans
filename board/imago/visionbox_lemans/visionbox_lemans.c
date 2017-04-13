@@ -138,13 +138,21 @@ int checkboard(void)
 
 int board_init(void)
 {
+	u32 __iomem *irq_ccsr = (u32 __iomem *)ISC_BASE;
+	
 #ifdef CONFIG_ENV_IS_NOWHERE
 	gd->env_addr = (ulong)&default_environment[0];
 #endif
 	select_i2c_ch_pca9547(I2C_MUX_CH_DEFAULT);
 
-	/* invert AQR405 IRQ pins polarity */
-//	out_le32(irq_ccsr + IRQCR_OFFSET / 4, AQR405_IRQ_MASK);
+	/* invert IRQ pin polarity
+	 * INTFPGA: IRQ00 
+	 * Marvell: IRQ01
+	 * PCA9538: IRQ02
+	 * INTFPGA1:IRQ03
+	 * RTC_INT: IRQ06 
+	 */
+	out_le32(irq_ccsr + IRQCR_OFFSET / 4, 0x4f);
 
 	return 0;
 }
