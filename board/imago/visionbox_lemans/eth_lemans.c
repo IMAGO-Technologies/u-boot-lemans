@@ -130,8 +130,40 @@ int board_eth_init(bd_t *bis)
 	 * the XAUI card is used for the XFI MAC, which will cause
 	 * error.
 	 */
-	wriop_set_phy_address(WRIOP1_DPMAC1, 4);
-	wriop_set_phy_address(WRIOP1_DPMAC2, 5);
+//	wriop_set_phy_address(WRIOP1_DPMAC1, 4);
+//	wriop_set_phy_address(WRIOP1_DPMAC2, 5);
+
+	// Set internal MDIO address for XFI lanes with the SerDes Register XFInCR1.
+	// This also enables MDIO access by Linux using the 10GBASE KR driver:
+	*(unsigned int *)0x01ea19f4 = 0x11 << 27;	// XFIHCR1: Lane H MDIO address 0x11
+	*(unsigned int *)0x01ea19e4 = 0x12 << 27;	// XFIGCR1: Lane G MDIO address 0x12
+	
+	// Register MDIO bus for XFI MAC1
+	reg = (struct memac_mdio_controller *)0x08c07000;
+	mdio_info.regs = reg;
+	mdio_info.name = "FSL_MDIO2";
+
+	fm_memac_mdio_init(bis, &mdio_info);
+
+	wriop_set_phy_address(WRIOP1_DPMAC1, 0x11);
+
+	dev = miiphy_get_dev_by_name("FSL_MDIO2");
+	wriop_set_mdio(WRIOP1_DPMAC1, dev);
+
+	
+	// Register MDIO bus for XFI MAC2
+	reg = (struct memac_mdio_controller *)0x08c0b000;
+	mdio_info.regs = reg;
+	mdio_info.name = "FSL_MDIO3";
+
+	/* Register the EMI */
+	fm_memac_mdio_init(bis, &mdio_info);
+
+	wriop_set_phy_address(WRIOP1_DPMAC2, 0x12);
+
+	dev = miiphy_get_dev_by_name("FSL_MDIO3");
+	wriop_set_mdio(WRIOP1_DPMAC2, dev);
+
 	
 	mc_boot_env_var = getenv(MC_BOOT_ENV_VAR);
 	if (mc_boot_env_var)
@@ -139,6 +171,7 @@ int board_eth_init(bd_t *bis)
 
 	cpu_eth_init(bis);
 #endif /* CONFIG_FSL_MC_ENET */
+
 
 	/* XFI Retimer: Invert channel A */
 	for (i=0; i<2; i++)
