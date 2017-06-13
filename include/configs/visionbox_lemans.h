@@ -9,6 +9,21 @@
 
 #include "ls2080a_common.h"
 
+//#define CONFIG_FSL_LS_PPA
+#if defined(CONFIG_FSL_LS_PPA)
+/* PSCI (Power_State_Coordination_Interface):
+ * Achtung: Mit PSCI im Device-Tree kann der GPIO power-off nicht verwendet werden.
+ * In der PPA Firmware muss dann smc32_psci_system_off() in psci.s implementiert werden,
+ * um den GPIO Pin zu ziehen. */
+#define CONFIG_ARMV8_PSCI
+#define CONFIG_SYS_LS_PPA_DRAM_BLOCK_MIN_SIZE	(1UL * 1024 * 1024)
+
+#define CONFIG_SYS_LS_PPA_FW_IN_XIP
+#ifdef CONFIG_SYS_LS_PPA_FW_IN_XIP
+#define CONFIG_SYS_LS_PPA_FW_ADDR		0xA3000000
+#endif
+#endif
+
 #define CONFIG_DISPLAY_BOARDINFO	/* Show 'Model: ...' */
 
 #define CONFIG_BOARD_LATE_INIT	/* call board_late_init() in soc.c */
@@ -61,6 +76,7 @@
 #define I2C_MUX_CH_DEFAULT      0x8 /* Channel 0 + Enable Bit (1<<3) */
 #define I2C_MUX_CH_DDR4			0x8 /* Channel 0 + Enable Bit (1<<3) */
 #define I2C_MUX_CH_VOL_MONITOR	0xa /* Channel 2 + Enable Bit (1<<3) */
+#define I2C_MUX_CH_RTC			0xb /* Channel 5 + Enable Bit (1<<3) */
 #define I2C_MUX_CH_XFI1			0xe /* Channel 6 + Enable Bit (1<<3) */
 #define I2C_MUX_CH_XFI2			0xf /* Channel 7 + Enable Bit (1<<3) */
 
@@ -150,6 +166,8 @@
 #define CONFIG_MEM_INIT_VALUE		0xdeadbeef
 //#undef CONFIG_NUM_DDR_CONTROLLERS
 //#define CONFIG_NUM_DDR_CONTROLLERS	1
+//#undef CONFIG_SYS_FSL_DDR_MAIN_NUM_CTRLS
+//#define CONFIG_SYS_FSL_DDR_MAIN_NUM_CTRLS	1
 #define SPD_EEPROM_ADDRESS1	0x51
 #define SPD_EEPROM_ADDRESS2	0x53
 #define SPD_EEPROM_ADDRESS	SPD_EEPROM_ADDRESS1

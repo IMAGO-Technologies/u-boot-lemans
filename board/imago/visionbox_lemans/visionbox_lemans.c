@@ -51,6 +51,8 @@ int i2c_multiplexer_select_vid_channel(uint8_t channel)
 
 int checkboard(void)
 {
+	uint8_t val;
+	int ret;
 	uint32_t regValue;
 	int i;
 
@@ -112,9 +114,6 @@ int checkboard(void)
 	/* Configure I2C GPIO Expander for both SFP+ channels */
 	for (i=0; i<2; i++)
 	{
-		uint8_t val;
-		int ret;
-		
 		select_i2c_ch_pca9547(I2C_MUX_CH_XFI1 + i);
 		/* Write PCA9538 output register: */
 		val = 0x40;	// RS0 = 1, TXDISABLE = 0
@@ -130,7 +129,39 @@ int checkboard(void)
 			printf("I2C: failed to configure GPIO-Multiplexer (%u)\n", i);
 			continue;
 		}
+
+		
+/*		// Select XFI channel A
+		val = 0x04;
+		ret = i2c_write(I2C_XFI_RETIMER_ADDR, 0xff, 1, &val, 1);
+		if (ret)
+			puts("PCA: failed to configure XFI retimer\n");
+
+		// CDR Reset
+		val = 0xc;
+		ret = i2c_write(I2C_XFI_RETIMER_ADDR, 0xa, 1, &val, 1);
+		if (ret)
+			puts("PCA: failed to configure XFI retimer\n");
+
+		// Select XFI channel B
+		val = 0x05;
+		ret = i2c_write(I2C_XFI_RETIMER_ADDR, 0xff, 1, &val, 1);
+		if (ret)
+			puts("PCA: failed to configure XFI retimer\n");
+
+		// CDR Reset
+		val = 0xc;
+		ret = i2c_write(I2C_XFI_RETIMER_ADDR, 0xa, 1, &val, 1);
+		if (ret)
+			puts("PCA: failed to configure XFI retimer\n");*/
 	}
+
+	/* RTC: turn off clock output during battery supply (BB32kHz = 0) */
+	select_i2c_ch_pca9547(I2C_MUX_CH_RTC);
+	val = 0x08;
+	ret = i2c_write(CONFIG_SYS_I2C_RTC_ADDR, 0xf, 1, &val, 1);
+	if (ret)
+		printf("I2C: failed to configure RTC\n");
 
 	return 0;
 }
