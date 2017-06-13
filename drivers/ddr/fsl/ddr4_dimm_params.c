@@ -140,6 +140,10 @@ unsigned int ddr_compute_dimm_parameters(const unsigned int ctrl_num,
 		0x0c, 0x2b, 0x2d, 0x04, 0x16, 0x35, 0x23, 0x0d, 0x00,
 		0x00, 0x2c, 0x0b, 0x03, 0x24, 0x35, 0x0c, 0x03, 0x2d
 	};
+	const u8 so_udimm_rc_e1_dq[18] = {
+		0x0b, 0x2b, 0x0c, 0x2b, 0x2b, 0x0b, 0x16, 0x36, 0x00,
+		0x00, 0x15, 0x2c, 0x0b, 0x35, 0x16, 0x36, 0x16, 0x36
+	};
 	int spd_error = 0;
 	u8 *ptr;
 	u8 const *pTable = NULL;
@@ -214,25 +218,40 @@ unsigned int ddr_compute_dimm_parameters(const unsigned int ctrl_num,
 		if (spd->mod_section.unbuffered.addr_mapping & 0x1)
 			pdimm->mirrored_dimm = 1;
 #ifndef CONFIG_SYS_FSL_DDR_EMU
-		if ((spd->mod_section.unbuffered.mod_height & 0xe0) == 0 &&
-		    (spd->mod_section.unbuffered.ref_raw_card == 0x00))
+		unsigned int rawCard = spd->mod_section.unbuffered.ref_raw_card & 0x1f;
+		unsigned int rawCardRev;
+		if ((spd->mod_section.unbuffered.mod_height & 0xe0) == 0)
+			rawCardRev = (spd->mod_section.unbuffered.ref_raw_card >> 5) & 0x3;
+		else
+			rawCardRev = 3 + ((spd->mod_section.unbuffered.mod_height >> 5) & 0x7);
+
+		if (rawCard == 0 && rawCardRev == 0)
 		{
 			// Transcend with Hynix chips incorrectly uses card rev. A0: 
 			if (spd->mmid_lsb == 0x01 && spd->mmid_msb == 0x4f &&
 				(256 * spd->mdate[0] + spd->mdate[1]) == 0x1624)
-				pTable = so_udimm_rc_a1_dq;
+				rawCardRev = 1;
 			// Micron incorrectly uses card rev. A0: 
 			else if (spd->mmid_lsb == 0x80 && spd->mmid_msb == 0x2c)
-				pTable = so_udimm_rc_a1_dq;
-			else
-				pTable = so_udimm_rc_a0_dq;
+				rawCardRev = 1;
 		}
+		else if (rawCard == 1 && rawCardRev == 1)
+		{
+			// Crucial incorrectly uses card rev. B1: 
+			if (spd->mmid_lsb == 0x85 && spd->mmid_msb == 0x9b && pdimm->n_ranks == 1)
+				rawCard = 1;	// A1
+		}
+		// Card Rev. E0 does not exist => E1 (Transcend 8GB)
+		else if (rawCard == 4 && rawCardRev == 0)
+			rawCardRev = 1;
 
-		// Crucial incorrectly uses card rev. B1: 
-		if (spd->mmid_lsb == 0x85 && spd->mmid_msb == 0x9b &&
-			pdimm->n_ranks == 1 &&
-		    spd->mod_section.unbuffered.ref_raw_card == 0x21)
+		if (rawCard == 0 && rawCardRev == 0)		// A0
+			pTable = so_udimm_rc_a0_dq;
+		else if (rawCard == 0 && rawCardRev == 1)	// A1
 			pTable = so_udimm_rc_a1_dq;
+		else if (rawCard == 4 && rawCardRev == 1)	// E1
+			pTable = so_udimm_rc_e1_dq;
+		
 #endif
 		break;
 
@@ -364,6 +383,11 @@ unsigned int ddr_compute_dimm_parameters(const unsigned int ctrl_num,
 
 	for (i = 0; i < 18; i++)
 		pdimm->dq_mapping[i] = spd->mapping[i];
+
+	debug("DQ-Mapping:");
+	for (i = 0; i < 18; i++)
+		debug(" %02x", spd->mapping[i]);
+	debug("\n");
 
 	pdimm->dq_mapping_ors = ((spd->mapping[0] >> 6) & 0x3) == 0 ? 1 : 0;
 

@@ -26,7 +26,7 @@ const struct raw_card_parameters udimm_modules[] = {
 		{3, 0, 1, {26, 24, 23, 23, 24, 23, 24, 23, 24}, {44, 73, 31, 86, 111, 174, 124, 161, 98}}, // D0
 		// D1 should be similar to A1, ECC byte estimated in between dq3 and dq4:
 		{3, 1, 1, {17, 15, 17, 14, 15, 17, 15, 17, 16}, {74, 74, 87, 87, 114, 114, 127, 127, 100}}, // D1
-		{4, 1, 2, {17, 21, 18, 21, 22, 21, 18, 21, 0}, {51, 69, 36, 83, 110, 157, 123, 142, 0}}, // E1
+		{4, 1, 2, {17, 21, 18, 21, 22, 18, 21, 16, 0}, {60, 82, 39, 101, 134, 188, 151, 172, 0}}, // E1
 		{6, 0, 2, {14, 24, 19, 25, 24, 19, 24, 13, 27}, {54, 72, 36, 85, 113, 162, 126, 144, 99}}, // G0
 		{6, 1, 2, {17, 22, 19, 22, 22, 19, 22, 17, 22}, {52, 69, 36, 83, 111, 159, 125, 144, 95}}, // G1
 		{7, 0, 2, {18, 22, 22, 22, 22, 20, 22, 18, 23}, {56, 81, 31, 101, 141, 211, 161, 186, 121}}, // H0
@@ -127,6 +127,12 @@ void fsl_ddr_board_options(memctl_options_t *popts,
 			printf("Crucial SPD fix: using Raw Card Rev. A1 for write-leveling instead of B1\n");
 			rawCard = 0;
 		}
+	}
+	// Card Rev. E0 does not exist => E1 (Transcend 8GB)
+	else if (rawCard == 4 && rawCardRev == 0)
+	{
+		printf("SPD fix: using Raw Card Rev. E1 for write-leveling instead of E0\n");
+		rawCardRev = 1;
 	}
 
 	printf("Using Raw Card Revision %c%u for write-leveling\n", 'A'+rawCard, rawCardRev);
