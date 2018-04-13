@@ -1,0 +1,7 @@
+VISIONBOX_LEMANS BOARD
+M:	Ralf Goebel <ralf.goebel@imago-technologies.com>
+S:	Maintained
+F:	board/imago/visionbox_lemans/
+F:	board/freescale/ls2080a/ls2080ardb.c
+F:	include/configs/visionbox_lemans.h
+F:	configs/ls2088a-lemans_defconfig

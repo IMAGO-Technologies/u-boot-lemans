@@ -857,6 +857,20 @@ config TARGET_LS2080ARDB
 	  development platform that supports the QorIQ LS2080A
 	  Layerscape Architecture processor.
 
+config TARGET_VISIONBOX_LEMANS
+	bool "Support IMAGO VisionBox LeMans"
+	select ARCH_LS2080A
+       select ARM64
+       select ARMV8_MULTIENTRY
+	select BOARD_LATE_INIT
+       select SUPPORT_SPL
+	select ARCH_MISC_INIT
+	imply SCSI
+       help
+         Support for IMAGO VisionBox LeMans platform.
+         The VisionBox LeMans is a high-performance computer that supports
+         the QorIQ LS2088A ARM64 processor.
+
 config TARGET_LS2081ARDB
 	bool "Support ls2081ardb"
 	select ARCH_LS2080A
@@ -1267,6 +1281,7 @@ source "board/gumstix/pepper/Kconfig"
 source "board/h2200/Kconfig"
 source "board/hisilicon/hikey/Kconfig"
 source "board/hisilicon/poplar/Kconfig"
+source "board/imago/visionbox_lemans/Kconfig"
 source "board/imx31_phycore/Kconfig"
 source "board/isee/igep003x/Kconfig"
 source "board/olimex/mx23_olinuxino/Kconfig"
