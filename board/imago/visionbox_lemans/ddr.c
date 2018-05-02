@@ -1,9 +1,8 @@
 /*
- * Copyright Imago Technologies GmbH
+ * Copyright IMAGO Technologies GmbH
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
-//#define DEBUG
 #include <common.h>
 #include <fsl_ddr.h>
 #include <asm/arch/clock.h>
@@ -204,22 +203,6 @@ void fsl_ddr_board_options(memctl_options_t *popts,
 	popts->ecc_init_using_memctl = ((pdimm[slot].edc_config & EDC_ECC) != 0);
 }
 
-#if 0
-phys_size_t initdram(int board_type)
-{
-	phys_size_t dram_size;
-
-#if defined(CONFIG_SPL) && !defined(CONFIG_SPL_BUILD)
-	return fsl_ddr_sdram_size();
-#else
-	puts("Initializing DDR....using SPD\n");
-
-	dram_size = fsl_ddr_sdram();
-#endif
-
-	return dram_size;
-}
-#else
 int fsl_initdram(void)
 {
 #if defined(CONFIG_SPL) && !defined(CONFIG_SPL_BUILD)
@@ -234,34 +217,3 @@ int fsl_initdram(void)
 
 	return 0;
 }
-#endif
-
-#if 0
-void dram_init_banksize(void)
-{
-	/*
-	 * gd->secure_ram tracks the location of secure memory.
-	 * It was set as if the memory starts from 0.
-	 * The address needs to add the offset of its bank.
-	 */
-	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;
-	if (gd->ram_size > CONFIG_SYS_LS2_DDR_BLOCK1_SIZE) {
-		gd->bd->bi_dram[0].size = CONFIG_SYS_LS2_DDR_BLOCK1_SIZE;
-		gd->bd->bi_dram[1].start = CONFIG_SYS_DDR_BLOCK2_BASE;
-		gd->bd->bi_dram[1].size = gd->ram_size -
-					  CONFIG_SYS_LS2_DDR_BLOCK1_SIZE;
-#ifdef CONFIG_SYS_MEM_RESERVE_SECURE
-		gd->secure_ram = gd->bd->bi_dram[1].start +
-				 gd->secure_ram -
-				 CONFIG_SYS_LS2_DDR_BLOCK1_SIZE;
-		gd->secure_ram |= MEM_RESERVE_SECURE_MAINTAINED;
-#endif
-	} else {
-		gd->bd->bi_dram[0].size = gd->ram_size;
-#ifdef CONFIG_SYS_MEM_RESERVE_SECURE
-		gd->secure_ram = gd->bd->bi_dram[0].start + gd->secure_ram;
-		gd->secure_ram |= MEM_RESERVE_SECURE_MAINTAINED;
-#endif
-	}
-}
-#endif

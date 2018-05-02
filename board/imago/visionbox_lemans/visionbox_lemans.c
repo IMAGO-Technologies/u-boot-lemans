@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 IMAGO Technologies GmbH
+ * Copyright IMAGO Technologies GmbH
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -12,7 +12,6 @@
 #include <hwconfig.h>
 #include <fdt_support.h>
 #include <libfdt.h>
-//#include <fsl_debug_server.h>
 #include <fsl-mc/fsl_mc.h>
 #include <fsl_ddr_sdram.h>
 #include <environment.h>
@@ -20,34 +19,36 @@
 #include <asm/arch/soc.h>
 #include <asm/arch/immap_lsch3.h>
 #include <fsl_sec.h>
+#include <ahci.h>
 #include "vid.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#if 0
-#include <scsi.h>
-#include <libata.h>
-#include <linux/ctype.h>
-#include <ahci.h>
+#define GPIO1_BASE	0x02300000
+#define GPIO2_BASE	0x02310000
+#define GPIO3_BASE	0x02320000
+#define GPIO4_BASE	0x02330000
+#define GPIO_DIR	0
+#define GPIO_DATA	8
+
 
 #define WAIT_MS_LINKUP	200
 
-int ahci_link_up(struct ahci_probe_ent *probe_ent, u8 port)
+int ahci_link_up(struct ahci_uc_priv *uc_priv, int port)
 {
 	u32 tmp;
 	int j = 0;
-	void __iomem *port_mmio = probe_ent->port[port].port_mmio;
+	void __iomem *port_mmio = uc_priv->port[port].port_mmio;
 
+	// Limit link speed to 3 Gbps in port SATA control register (PxSCTL)
 	tmp = readl(port_mmio + PORT_SCR_CTL);
 	tmp &= ~0xf0;
-	tmp |= 0x21;	// 
+	tmp |= 0x21;	// Gen 2 + hard reset
 	writel(tmp, port_mmio + PORT_SCR_CTL);
 	udelay(1000);
-	tmp &= ~0x1;
+	tmp &= ~0x1;	// reset off
 	writel(tmp, port_mmio + PORT_SCR_CTL);
 	
-//	printf("SATA port control: 0x%x\n", tmp);
-
 	/*
 	 * Bring up SATA link.
 	 * SATA link bringup time is usually less than 1 ms; only very
@@ -78,14 +79,6 @@ int ahci_link_up(struct ahci_probe_ent *probe_ent, u8 port)
 	
 	return 1;
 }
-#endif
-
-#define GPIO1_BASE	0x02300000
-#define GPIO2_BASE	0x02310000
-#define GPIO3_BASE	0x02320000
-#define GPIO4_BASE	0x02330000
-#define GPIO_DIR	0
-#define GPIO_DATA	8
 
 /* I2C Multiplexer */
 int select_i2c_ch_pca9547(uint8_t ch)
@@ -106,15 +99,13 @@ int i2c_multiplexer_select_vid_channel(uint8_t channel)
 	return select_i2c_ch_pca9547(channel);
 }
 
+
 int checkboard(void)
 {
 	uint8_t val;
 	int ret;
 	uint32_t regValue;
 	int i;
-
-//	printf("Board: VisionBox LeMans\n");
-//	printf("Board version: %c", ...);
 
 	/* 
 	 * Configure unconnected GPIO pins as outputs
@@ -185,31 +176,6 @@ int checkboard(void)
 			printf("I2C: failed to configure GPIO-Multiplexer (%u)\n", i);
 			continue;
 		}
-
-		
-/*		// Select XFI channel A
-		val = 0x04;
-		ret = i2c_write(I2C_XFI_RETIMER_ADDR, 0xff, 1, &val, 1);
-		if (ret)
-			puts("PCA: failed to configure XFI retimer\n");
-
-		// CDR Reset
-		val = 0xc;
-		ret = i2c_write(I2C_XFI_RETIMER_ADDR, 0xa, 1, &val, 1);
-		if (ret)
-			puts("PCA: failed to configure XFI retimer\n");
-
-		// Select XFI channel B
-		val = 0x05;
-		ret = i2c_write(I2C_XFI_RETIMER_ADDR, 0xff, 1, &val, 1);
-		if (ret)
-			puts("PCA: failed to configure XFI retimer\n");
-
-		// CDR Reset
-		val = 0xc;
-		ret = i2c_write(I2C_XFI_RETIMER_ADDR, 0xa, 1, &val, 1);
-		if (ret)
-			puts("PCA: failed to configure XFI retimer\n");*/
 	}
 
 	/* RTC: turn off clock output during battery supply (BB32kHz = 0) */
@@ -229,7 +195,6 @@ int board_init(void)
 #ifdef CONFIG_ENV_IS_NOWHERE
 	gd->env_addr = (ulong)&default_environment[0];
 #endif
-/*	select_i2c_ch_pca9547(I2C_MUX_CH_DEFAULT);*/
 
 	/* invert IRQ pin polarity
 	 * INTFPGA: IRQ00 
@@ -266,255 +231,11 @@ int misc_init_r(void)
 	return 0;
 }
 
-//#define TESTVAL  (~(1<<(i%32))
-//#define TESTVAL  (1<<(i%64))
-//#define TESTVAL  (i%2?0x5555555555555555ull:0xaaaaaaaaaaaaaaaaull)
-//#define TESTVAL  (0)
-//#define TESTVAL  i
-#define TESTVAL  ((1ull<<(63-(i%32))) | (1<<(i%32)))
-
-void dram_test(void)
-{
-	int bank = 0;
-	unsigned long long i;
-	int ctrl = 0;
-
-#if 0
-	printf("\n");
-
-	// Dump DDR4 debug registers
-	{
-		int *repeatable;
-		unsigned long *ticks;
-		char *argv[] = {"base", "0"};
-		cmd_process(0, 2, argv, &repeatable, &ticks);
-	}
-
-	{
-		int *repeatable;
-		unsigned long *ticks;
-		char *argv[] = {"md.l", "0x1080000", "0x400"};
-		
-//		printf("\nDDR1 register dump (1):\n");
-//		cmd_process(0, 3, argv, &repeatable, &ticks);
-
-		printf("*(unsigned int *)0x1080FB0 = 0x10000003;\n");
-		*(unsigned int *)0x1080FB0 = 0x10000003;
-
-		printf("\nDDR1 register dump (2):\n");
-		cmd_process(0, 3, argv, &repeatable, &ticks);
-	}
-	{
-		int *repeatable;
-		unsigned long *ticks;
-		char *argv[] = {"md.l", "0x1090000", "0x400"};
-
-//		printf("\nDDR2 register dump (1):\n");
-//		cmd_process(0, 3, argv, &repeatable, &ticks);
-
-		printf("*(unsigned int *)0x1080FB0 = 0x10000003;\n");
-		*(unsigned int *)0x1090FB0 = 0x10000003;
-
-		printf("\nDDR2 register dump (2):\n");
-		cmd_process(0, 3, argv, &repeatable, &ticks);
-	}
-#endif
-
-#if 1
-	unsigned long size = gd->bd->bi_dram[bank].size - (16 << 20);
-	unsigned int errors = 0;
-	unsigned long long *base = (unsigned long long *)(gd->bd->bi_dram[bank].start);
-
-	printf("\nTesting memory bank %u, %lu MB: ", bank, (size>>20));
-
-	printf("writing...");
-	for (i=0; i<(size/8); i++)
-	{
-		base[i] = TESTVAL;
-	}
-	printf(", reading...");
-
-	for (i=0; i<(size/8); i++)
-	{
-		unsigned long long out = TESTVAL;
-		if (base[i] != out)
-		{
-			printf("\nData error: base[%llu]=0x%016llx, xor=0x%016llX", i, base[i], base[i]^out);
-			errors++;
-			if (errors >= 100)
-				break;
-		}
-	}
-
-	if (errors == 0)
-		printf("   OK\n");
-	else
-		printf("\n   errors: %u\n", errors);
-
-	return;
-#endif
-	
-//	for (bank=1; bank < CONFIG_NR_DRAM_BANKS; bank++)
-	while (1)
-	{
-		unsigned long size = gd->bd->bi_dram[bank].size;
-		unsigned int errors = 0;
-
-		size = 2<<10;
-		printf("\nTesting bank %u, %lu kB...\n", bank, (size>>10));
-#if 1
-		unsigned long long *base = (unsigned long long *)(gd->bd->bi_dram[bank].start);
-
-		udelay(1000000);
-
-		printf("writing...\n");
-		for (ctrl=0; ctrl<=1; ctrl++)
-		{
-			for (i=32*ctrl; i<(size/8); i++)
-			{
-				base[i] = TESTVAL;
-				if ((i % 32) == 31)
-					i+=32;
-			}
-		}
-		
-		flush_dcache_range((unsigned long)base, (unsigned long)&base[i]);
-		invalidate_dcache_range((unsigned long)base, (unsigned long)&base[i]);
-
-#if 1
-		int readcount;
-		for (readcount=0; readcount<4; readcount++)
-		{
-			errors = 0;
-			for (ctrl=0; ctrl<=1; ctrl++)
-			{
-				printf("reading controller %u...\n", ctrl);
-				for (i=32*ctrl; i<64; i++)
-				{
-					unsigned long long out = TESTVAL;
-					if (base[i] != out)
-					{
-						printf("Data error: base[%04llu]=0x%016llx, xor=0x%016llX\n", i, base[i], base[i]^out);
-						errors++;
-					}
-		/*			if ((i%1024) == 0)
-					{
-						printf("Errors: %u\n", errors);
-						errors = 0;
-					}
-					if ((i % 32) == 31)
-						i+=32;*/
-		/*			if ((i%(1024+32)) == 0)
-					{
-						printf("Errors: %u\n", errors);
-						errors = 0;
-					}*/
-					if ((i % 32) == 31)
-						i+=32;
-		//			if (errors >= 100)
-		//				break;
-					udelay(25000);
-				}
-				if (errors == 0)
-					printf("   OK\n");
-				else
-					printf("   controller %u errors: %u\n", ctrl, errors);
-				errors = 0;
-				udelay(1000000);
-			}
-			invalidate_dcache_range((unsigned long)base, (unsigned long)&base[i]);
-		}
-#elif 1
-		for (ctrl=0; ctrl<=1; ctrl++)
-		{
-			printf("reading controller %u...\n", ctrl);
-			for (i=32*ctrl; i<(size/8); i++)
-			{
-				unsigned long long out = TESTVAL;
-				if (base[i] != out)
-				{
-					printf("Data error: base[%04lu]=0x%016llx, xor=0x%016llX\n", i, base[i], base[i]^out);
-					errors++;
-				}
-	/*			if ((i%1024) == 0)
-				{
-					printf("Errors: %u\n", errors);
-					errors = 0;
-				}
-				if ((i % 32) == 31)
-					i+=32;*/
-	/*			if ((i%(1024+32)) == 0)
-				{
-					printf("Errors: %u\n", errors);
-					errors = 0;
-				}*/
-				if ((i % 32) == 31)
-					i+=32;
-	//			if (errors >= 100)
-	//				break;
-	//			udelay(1);
-			}
-			if (errors == 0)
-				printf("   OK\n");
-			else
-				printf("   controller %u errors: %u\n", ctrl, errors);
-			errors = 0;
-		}
-		invalidate_dcache_range((unsigned long)base, (unsigned long)&base[i]);
-#endif
-#else
-		unsigned int *base = (unsigned int *)(gd->bd->bi_dram[bank].start);
-		printf("base = %p\n", base);
-	
-/*		printf("reading...\n");
-		for (i=0; i<(size/4); i++)
-		{
-			printf("0x%08x\n", base[i]);
-		}*/
-
-		printf("writing...\n");
-		for (i=0; i<(size/4); i++)
-		{
-//			printf("writing %u\n", i);
-			base[i] = TESTVAL;
-//			udelay(1);
-		}
-
-		flush_dcache_range((unsigned long)base, (unsigned long)&base[i]);
-		invalidate_dcache_range((unsigned long)base, (unsigned long)&base[i]);
-		
-		printf("reading...\n");
-
-		for (i=0; i<(size/4); i++)
-		{
-			unsigned int out = TESTVAL;
-			if (base[i] != out)
-			{
-				printf("Data error: base[0x%08lx]=0x%08x, soll=0x%08x, xor=0x%08X\n", i, base[i], out, base[i]^out);
-				errors++;
-			}
-//			if (errors >= 100)
-//				break;
-//			udelay(1);
-		}
-#endif
-	}
-}
 
 void detail_board_ddr_info(void)
 {
 	print_ddr_info(0);
-/*	dram_test();*/
 }
-
-/*int dram_init(void)
-{
-	select_i2c_ch_pca9547(I2C_MUX_CH_DDR4);
-
-	gd->ram_size = initdram(0);
-
-	return 0;
-}*/
 
 #if defined(CONFIG_ARCH_MISC_INIT)
 int arch_misc_init(void)
@@ -560,7 +281,6 @@ void board_quiesce_devices(void)
 #ifdef CONFIG_OF_BOARD_SETUP
 int ft_board_setup(void *blob, bd_t *bd)
 {
-//	int err;
 	u64 base[CONFIG_NR_DRAM_BANKS];
 	u64 size[CONFIG_NR_DRAM_BANKS];
 
@@ -578,42 +298,9 @@ int ft_board_setup(void *blob, bd_t *bd)
 	
 #ifdef CONFIG_FSL_MC_ENET
 	fdt_fixup_board_enet(blob);
-/*	err = fsl_mc_ldpaa_exit(bd);
-	if (err)
-		return err;*/
 #endif
 
 	return 0;
 }
 #endif
 
-void update_spd_address(unsigned int ctrl_num,
-			unsigned int slot,
-			unsigned int *addr)
-{
-}
-
-/*
- * DDR4 Reset per GPIO zum FPGA:
- * DDR4 Reset-Timing ist nur bei Registered-DIMMs von Bedeutung, gibt es bei
- * SO-DIMMS aber nicht.
- */
-
-#if 0
-
-int board_need_mem_reset(void)
-{
-	return 1;
-}
-
-void board_assert_mem_reset(void)
-{
-	out_le32((void *)(GPIO3_BASE+GPIO_DATA), 1<<(31-27));
-	out_le32((void *)(GPIO3_BASE+GPIO_DIR), 1<<(31-27));
-}
-
-void board_deassert_mem_reset(void)
-{
-	out_le32((void *)(GPIO3_BASE+GPIO_DATA), 0);
-}
-#endif

@@ -1,8 +1,7 @@
 /*
- * Copyright 2015 Freescale Semiconductor, Inc.
+ * Copyright IMAGO Technologies GmbH
  *
- *
- * SPDX-License-Identifier:     GPL-2.0+
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -21,67 +20,27 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-//#define MC_BOOT_ENV_VAR "mcinitcmd"
-
 int select_i2c_ch_pca9547(uint8_t ch);
 
-#if 0
-/* U-Boot command fixup_dpl: Copy MAC address information from the environment
- * to the Data Path Layout.
- */
+/*
+ * U-Boot command fixup_dpl:
+ * dummy function to avoid error when using an old U-Boot environment
+ * */
 static int do_fixup_dpl(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char dpni[40];
-	int offset;
-	int i;
-	unsigned char mac_addr[6];
-	int mac_dt[6];
-	int eth_id;
-	void *dpl_fdt_hdr;
-
-	if (argc < 2) {
-		puts("fixup_dpl: missing arguments!\n");
-		return CMD_RET_FAILURE;
-	}
-
-	dpl_fdt_hdr = (void *)simple_strtoul(argv[1], NULL, 16);
-
-	printf("Updating MAC address information in DPL\n");
-
-	for (eth_id=0; eth_id<6; eth_id++)
-	{
-		if (!eth_getenv_enetaddr_by_index("eth", eth_id, mac_addr))
-		{
-			printf("MAC address for eth%u not found in environment!\n", eth_id);
-			continue;
-		}
-
-		for (i=0; i<6; i++)
-			mac_dt[i] = cpu_to_fdt32(mac_addr[i]);
-		
-		sprintf(dpni, "/objects/dpni@%u", eth_id);
-		offset = fdt_path_offset(dpl_fdt_hdr, dpni);
-		if (offset < 0) {
-			printf("Node '%s' not found in DPL!\n", dpni);
-			continue;
-		}
-		fdt_setprop(dpl_fdt_hdr, offset, "mac_addr", mac_dt, sizeof(mac_dt));
-	}
-	
 	return CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
 	fixup_dpl,  2,  1,   do_fixup_dpl,
-	"Update Data Path Layout with MAC address information for DPNI objects",
-	"fixup_dpl <DPL address>\n"
+	"This command is obsolete",
+	"fixup_dpl\n"
 );
-#endif
+
 
 int board_eth_init(bd_t *bis)
 {
 #if defined(CONFIG_FSL_MC_ENET)
-//	char *mc_boot_env_var;
 	int i, interface;
 	struct memac_mdio_info mdio_info;
 	struct mii_dev *dev;
@@ -168,10 +127,6 @@ int board_eth_init(bd_t *bis)
 	wriop_set_mdio(WRIOP1_DPMAC2, dev);
 
 	
-/*	mc_boot_env_var = getenv(MC_BOOT_ENV_VAR);
-	if (mc_boot_env_var)
-		run_command_list(mc_boot_env_var, -1, 0);*/
-
 	cpu_eth_init(bis);
 #endif /* CONFIG_FSL_MC_ENET */
 
@@ -201,22 +156,6 @@ int board_eth_init(bd_t *bis)
 			puts("PCA: failed to configure XFI retimer\n");
 	}
 
-/*	select_i2c_ch_pca9547(I2C_MUX_CH_DEFAULT);*/
-
-/*	u16 phyReg;
-	dev = miiphy_get_dev_by_name(DEFAULT_WRIOP_MDIO2_NAME);
-	memac_mdio_write(dev, 0, -1, 22, 4);
-	phyReg = memac_mdio_read(dev, 0, -1, 0);
-	phyReg |= 0x200;
-	memac_mdio_write(dev, 0, -1, 0, phyReg);
-	printf("PHY reg0: 0x%04x\n", memac_mdio_read(dev, 0, -1, 0));
-	printf("PHY reg1: 0x%04x\n", memac_mdio_read(dev, 0, -1, 1));
-	printf("PHY reg1: 0x%04x\n", memac_mdio_read(dev, 0, -1, 1));
-	udelay(1000000);
-	printf("PHY reg1: 0x%04x\n", memac_mdio_read(dev, 0, -1, 1));
-	printf("PHY reg1: 0x%04x\n", memac_mdio_read(dev, 0, -1, 1));
-	memac_mdio_write(dev, 0, -1, 22, 0);
-*/
 	return pci_eth_init(bis);
 }
 
@@ -225,4 +164,4 @@ void reset_phy(void)
 {
 	mc_env_boot();
 }
-#endif /* CONFIG_RESET_PHY_R */
+#endif
