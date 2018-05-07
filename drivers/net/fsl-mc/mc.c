@@ -709,6 +709,10 @@ int mc_init(u64 mc_fw_addr, u64 mc_dpc_addr)
 					    &raw_image_size);
 	if (error != 0)
 		goto out;
+
+	/* Clear MC RAM first: */
+	memset((void *)mc_ram_addr, 0, mc_ram_size);
+
 	/*
 	 * Load the MC FW at the beginning of the MC private DRAM block:
 	 */
