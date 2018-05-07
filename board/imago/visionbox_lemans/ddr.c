@@ -174,7 +174,7 @@ void fsl_ddr_board_options(memctl_options_t *popts,
 	popts->zq_en = 1;
 
 	/* optimize cpo for erratum A-009942 */
-	popts->cpo_sample = 0x6e;
+	popts->cpo_sample = 0x5e;
 
 	/* Enable DDR hashing */
 	if (fsl_ddr_get_version(0) == 0x50201)

@@ -40,7 +40,6 @@
 	"kernel_load=0xa0000000\0" \
 	"dpcfile=/boot/dpc-0x3741.dtb\0" \
 	"dplfile=/boot/dpl-eth.0x37_0x41.dtb\0" \
-	"mcmemsize=0x70000000\0" \
 	"mcinitcmd=mmc dev 0;ext2load mmc 0:1 0xa2300000 /boot/mc.itb;" \
 	"ext2load mmc 0:1 0xa2800000 ${dpcfile};" \
 	"fsl_mc start mc 0xa2300000 0xa2800000\0" \
@@ -142,6 +141,7 @@
 #define CONFIG_CHIP_SELECTS_PER_CTRL	4
 #undef	CONFIG_NR_DRAM_BANKS
 #define CONFIG_NR_DRAM_BANKS			2
+#undef	CONFIG_SYS_FSL_HAS_DP_DDR
 #define CONFIG_FSL_DDR_BIST	/* enable built-in memory test */
 
 #define CONFIG_CMD_MEMINFO

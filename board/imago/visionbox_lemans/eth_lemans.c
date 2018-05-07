@@ -44,22 +44,8 @@ int board_eth_init(bd_t *bis)
 	int i, interface;
 	struct memac_mdio_info mdio_info;
 	struct mii_dev *dev;
-	struct ccsr_gur *gur = (void *)(CONFIG_SYS_FSL_GUTS_ADDR);
-	u32 srds_s1;
 	struct memac_mdio_controller *reg;
 
-	srds_s1 = in_le32(&gur->rcwsr[28]) &
-				FSL_CHASSIS3_RCWSR28_SRDS1_PRTCL_MASK;
-	srds_s1 >>= FSL_CHASSIS3_RCWSR28_SRDS1_PRTCL_SHIFT;
-
-#if 0
-	reg = (struct memac_mdio_controller *)CONFIG_SYS_FSL_WRIOP1_MDIO1;
-	mdio_info.regs = reg;
-	mdio_info.name = DEFAULT_WRIOP_MDIO1_NAME;
-
-	/* Register the EMI 1 */
-	fm_memac_mdio_init(bis, &mdio_info);
-#endif
 	reg = (struct memac_mdio_controller *)CONFIG_SYS_FSL_WRIOP1_MDIO2;
 	mdio_info.regs = reg;
 	mdio_info.name = DEFAULT_WRIOP_MDIO2_NAME;
@@ -83,18 +69,6 @@ int board_eth_init(bd_t *bis)
 		}
 	}
 
-	/*
-	 * XFI does not need a PHY to work, but to avoid U-boot use
-	 * default PHY address which is zero to a MAC when it found
-	 * a MAC has no PHY address, we give a PHY address to XFI
-	 * MAC, and should not use a real XAUI PHY address, since
-	 * MDIO can access it successfully, and then MDIO thinks
-	 * the XAUI card is used for the XFI MAC, which will cause
-	 * error.
-	 */
-//	wriop_set_phy_address(WRIOP1_DPMAC1, 4);
-//	wriop_set_phy_address(WRIOP1_DPMAC2, 5);
-
 	// Set internal MDIO address for XFI lanes with the SerDes Register XFInCR1.
 	// This also enables MDIO access by Linux using the 10GBASE KR driver:
 	*(unsigned int *)0x01ea19f4 = 0x11 << 27;	// XFIHCR1: Lane H MDIO address 0x11
@@ -104,7 +78,6 @@ int board_eth_init(bd_t *bis)
 	reg = (struct memac_mdio_controller *)0x08c07000;
 	mdio_info.regs = reg;
 	mdio_info.name = "FSL_MDIO2";
-
 	fm_memac_mdio_init(bis, &mdio_info);
 
 	wriop_set_phy_address(WRIOP1_DPMAC1, 0x11);
@@ -117,8 +90,6 @@ int board_eth_init(bd_t *bis)
 	reg = (struct memac_mdio_controller *)0x08c0b000;
 	mdio_info.regs = reg;
 	mdio_info.name = "FSL_MDIO3";
-
-	/* Register the EMI */
 	fm_memac_mdio_init(bis, &mdio_info);
 
 	wriop_set_phy_address(WRIOP1_DPMAC2, 0x12);
@@ -162,6 +133,22 @@ int board_eth_init(bd_t *bis)
 #if defined(CONFIG_RESET_PHY_R)
 void reset_phy(void)
 {
+/*	u64 base[CONFIG_NR_DRAM_BANKS];
+	u64 size[CONFIG_NR_DRAM_BANKS];
+
+	base[0] = gd->bd->bi_dram[0].start;
+	size[0] = gd->bd->bi_dram[0].size;
+	base[1] = gd->bd->bi_dram[1].start;
+	size[1] = gd->bd->bi_dram[1].size;
+
+	if (gd->arch.resv_ram >= base[1] &&
+		 gd->arch.resv_ram < base[1] + size[1])
+	{
+		u64 len = size[1] - (gd->arch.resv_ram - base[1]);
+		printf("Clearing reserved memory at 0x%llx, len=0x%llx...\n", gd->arch.resv_ram, len);
+		memset(gd->arch.resv_ram, 0, len);
+	}
+*/
 	mc_env_boot();
 }
 #endif
