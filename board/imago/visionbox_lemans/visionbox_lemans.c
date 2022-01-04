@@ -23,6 +23,62 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+
+#include <scsi.h>
+#include <libata.h>
+#include <linux/ctype.h>
+#include <ahci.h>
+
+#define WAIT_MS_LINKUP	200
+
+int ahci_link_up(struct ahci_probe_ent *probe_ent, u8 port)
+{
+	u32 tmp;
+	int j = 0;
+	void __iomem *port_mmio = probe_ent->port[port].port_mmio;
+
+	tmp = readl(port_mmio + PORT_SCR_CTL);
+	tmp &= ~0xf0;
+	tmp |= 0x21;	// 
+	writel(tmp, port_mmio + PORT_SCR_CTL);
+	udelay(1000);
+	tmp &= ~0x1;
+	writel(tmp, port_mmio + PORT_SCR_CTL);
+	
+//	printf("SATA port control: 0x%x\n", tmp);
+
+	/*
+	 * Bring up SATA link.
+	 * SATA link bringup time is usually less than 1 ms; only very
+	 * rarely has it taken between 1-2 ms. Never seen it above 2 ms.
+	 */
+	while (j < WAIT_MS_LINKUP) {
+		tmp = readl(port_mmio + PORT_SCR_STAT);
+		if ((tmp & PORT_SCR_STAT_DET_MASK) == PORT_SCR_STAT_DET_PHYRDY)
+		{
+			int speed = (tmp >> 4) & 0xf;
+			const char *speed_s;
+
+			if (speed == 1)
+				speed_s = "1.5";
+			else if (speed == 2)
+				speed_s = "3";
+			else if (speed == 3)
+				speed_s = "6";
+			else
+				speed_s = "?";
+			printf("SATA link speed: %s Gbps\n", speed_s);
+
+			return 0;
+		}
+		udelay(1000);
+		j++;
+	}
+	
+	return 1;
+}
+
+
 #define GPIO1_BASE	0x02300000
 #define GPIO2_BASE	0x02310000
 #define GPIO3_BASE	0x02320000
